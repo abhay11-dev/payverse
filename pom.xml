@@ -8,11 +8,18 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.payverse</groupId>
-
     <artifactId>payverse-parent</artifactId>
-
     <version>1.0.0-SNAPSHOT</version>
 
     <packaging>pom</packaging>
+
+    <modules>
+        <module>user</module>
+        <module>wallet</module>
+        <module>payment</module>
+        <module>ledger</module>
+        <module>notification</module>
+        <module>api-gateway</module>
+    </modules>
 
 </project>

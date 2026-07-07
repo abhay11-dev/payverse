@@ -1,0 +1,19 @@
+# Git ignore: Never stage or track these files/folders at all," full stop, regardless of push or deploy"
+# Maven
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
