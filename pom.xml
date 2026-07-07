@@ -14,11 +14,11 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>user</module>
-        <module>wallet</module>
-        <module>payment</module>
-        <module>ledger</module>
-        <module>notification</module>
+        <module>user-service</module>
+        <module>wallet-service</module>
+        <module>payment-service</module>
+        <module>ledger-service</module>
+        <module>notification-service</module>
         <module>api-gateway</module>
     </modules>
 

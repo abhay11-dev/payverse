@@ -14,6 +14,6 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>wallet</artifactId>
+    <artifactId>payment-service</artifactId>
 
 </project>

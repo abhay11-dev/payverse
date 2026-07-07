@@ -14,6 +14,6 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>payment</artifactId>
+    <artifactId>notification-service</artifactId>
 
 </project>
