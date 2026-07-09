@@ -1,5 +1,3 @@
-
-
 # PayVerse
 
 > A microservices-based digital payments platform — wallet, P2P transfers, notifications, and transaction ledger — built to mirror the architecture patterns used by production UPI-scale payment systems.
@@ -8,22 +6,26 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
+[![Status](https://img.shields.io/badge/status-early%20development-yellow.svg)](#project-status)
+
+---
+
+## Project Status
+
+**This project is in early scaffolding — Week 1 of a 12-month build.** What's real right now: a compiling multi-module Maven project and a Docker Compose environment for local infra (MySQL, Redis, Kafka). No business logic (auth, wallet, payments) exists yet — that starts next.
+
+This README is written honestly for where the project actually is today, not where it's headed. The [Roadmap](#roadmap) section tracks real progress with checkboxes, updated as each piece actually ships.
 
 ---
 
 ## Table of Contents
+- [Project Status](#project-status)
 - [Overview](#overview)
-- [Architecture](#architecture)
+- [Planned Architecture](#planned-architecture)
 - [Tech Stack](#tech-stack)
-- [Services](#services)
-- [Getting Started](#getting-started)
-- [API Documentation](#api-documentation)
-- [Testing](#testing)
-- [Monitoring & Observability](#monitoring--observability)
-- [CI/CD](#cicd)
+- [Planned Services](#planned-services)
+- [Getting Started (Current State)](#getting-started-current-state)
 - [Project Structure](#project-structure)
-- [Design Decisions](#design-decisions)
 - [Roadmap](#roadmap)
 - [License](#license)
 
@@ -31,13 +33,15 @@
 
 ## Overview
 
-PayVerse is a self-initiated project simulating a real-world digital payments platform, built to explore the architectural, concurrency, and reliability challenges present in systems like UPI. It includes wallet management, atomic P2P money transfers, event-driven notifications, an immutable transaction ledger, and an API gateway — all deployed as independent Spring Boot microservices communicating over Kafka, backed by MySQL and Redis.
+PayVerse is a self-initiated project simulating a real-world digital payments platform, being built to explore the architectural, concurrency, and reliability challenges present in systems like UPI — idempotency, optimistic locking, event sourcing, the Saga pattern, and rate limiting. The goal is to demonstrate hands-on understanding of these concepts by actually building them, not just describing them.
 
-**Why this project exists:** to demonstrate hands-on understanding of distributed systems concepts — idempotency, optimistic locking, event sourcing, the Saga pattern, and rate limiting — rather than just describing them.
+**Where it stands after Week 1:** repo scaffolded, local infra (MySQL, Redis, Kafka) running in Docker Compose, six-module Maven skeleton compiling clean. Auth, wallet, and payment logic have not been written yet.
 
 ---
 
-## Architecture
+## Planned Architecture
+
+*(This is the target design — not yet implemented. Included here so the intended direction is clear from day one.)*
 
 ```
                       ┌─────────────┐
@@ -67,131 +71,71 @@ PayVerse is a self-initiated project simulating a real-world digital payments pl
      └───────────┘
 ```
 
-**Key patterns implemented:**
-- **Idempotency** — Redis-backed idempotency keys prevent duplicate payment processing on retry.
-- **Optimistic locking** — wallet balance updates use `@Version` to handle concurrent writes safely.
-- **Saga pattern** — payment failures trigger compensating events (e.g., reverse a debit if credit fails) instead of distributed transactions.
-- **Event sourcing** — the ledger is append-only; current state is derived from the event stream, never mutated.
-- **Rate limiting** — token bucket algorithm via Redis at the API Gateway layer.
+**Patterns planned (not yet built):** idempotency via Redis keys, optimistic locking on wallet balance updates, Saga-based compensation on payment failure, append-only event-sourced ledger, token-bucket rate limiting at the gateway.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Language | Java 17 |
-| Framework | Spring Boot 3.x, Spring Security, Spring Data JPA, Spring Cloud Gateway |
-| Messaging | Apache Kafka |
-| Database | MySQL 8 |
-| Cache / Session | Redis 7 |
-| Frontend | React 18, TypeScript, TailwindCSS |
-| Containerization | Docker, Docker Compose |
-| CI/CD | GitHub Actions |
-| Cloud | AWS (EC2, RDS, ElastiCache, S3) |
-| Monitoring | Prometheus, Grafana |
-| Testing | JUnit 5, Mockito, Testcontainers |
-
----
-
-## Services
-
-| Service | Responsibility | Port |
+| Layer | Technology | Status |
 |---|---|---|
-| `payverse-api-gateway` | Single entry point — JWT auth, routing, rate limiting | `8080` |
-| `payverse-user` | Registration, login, JWT issuance, refresh tokens | `8081` |
-| `payverse-wallet` | Wallet balance, optimistic-locked updates | `8082` |
-| `payverse-payment` | P2P transfers, idempotency, Saga orchestration | `8083` |
-| `payverse-notification` | Kafka-consumer-driven push/email/websocket notifications | `8084` |
-| `payverse-ledger` | Append-only transaction ledger, reconciliation | `8085` |
+| Language | Java 17 | ✅ in use |
+| Build | Maven (multi-module) | ✅ in use |
+| Framework | Spring Boot 3.x, Spring Security, Spring Data JPA, Spring Cloud Gateway | planned |
+| Messaging | Apache Kafka | infra running, not yet integrated into any service |
+| Database | MySQL 8 | infra running, no schema yet |
+| Cache / Session | Redis 7 | infra running, not yet used |
+| Frontend | React 18, TypeScript, TailwindCSS | planned |
+| Containerization | Docker, Docker Compose | ✅ in use for local infra |
+| CI/CD | GitHub Actions | planned |
+| Cloud | AWS (EC2, RDS, ElastiCache, S3) | planned |
+| Monitoring | Prometheus, Grafana | planned |
+| Testing | JUnit 5, Mockito, Testcontainers | planned |
 
 ---
 
-## Getting Started
+## Planned Services
+
+| Module | Responsibility | Status |
+|---|---|---|
+| `payverse-api-gateway` | Single entry point — JWT auth, routing, rate limiting | scaffolded, empty |
+| `payverse-user` | Registration, login, JWT issuance, refresh tokens | scaffolded, empty |
+| `payverse-wallet` | Wallet balance, optimistic-locked updates | scaffolded, empty |
+| `payverse-payment` | P2P transfers, idempotency, Saga orchestration | scaffolded, empty |
+| `payverse-notification` | Kafka-consumer-driven push/email/websocket notifications | scaffolded, empty |
+| `payverse-ledger` | Append-only transaction ledger, reconciliation | scaffolded, empty |
+
+All six exist as Maven modules with valid (currently empty) `pom.xml` files and build successfully as part of the parent project. No controllers, services, or entities have been written yet.
+
+---
+
+## Getting Started (Current State)
+
+This reflects what actually works today — not a future setup guide.
 
 ### Prerequisites
 - Java 17+
 - Maven 3.9+
 - Docker & Docker Compose
-- Node.js 18+ (for the frontend, once added)
 
-### Run locally
+### Run what exists
 
 ```bash
 # clone the repo
 git clone https://github.com/<your-username>/payverse.git
 cd payverse
 
-# start all infra + services
+# bring up local infra (MySQL, Redis, Kafka, Zookeeper)
 docker-compose up -d
 
-# build all modules
-mvn clean install
-
-# verify all containers are healthy
+# confirm all containers are healthy
 docker-compose ps
+
+# build all 6 (currently empty) modules
+mvn clean install
 ```
 
-The API Gateway will be available at `http://localhost:8080`.
-
-### Environment variables
-
-| Variable | Description | Default |
-|---|---|---|
-| `DB_URL` | MySQL connection string | `jdbc:mysql://localhost:3306/payverse` |
-| `REDIS_HOST` | Redis host | `localhost` |
-| `KAFKA_BOOTSTRAP_SERVERS` | Kafka broker address | `localhost:9092` |
-| `JWT_SECRET` | Signing secret for JWTs | *(set via `.env`, never committed)* |
-
----
-
-## API Documentation
-
-Postman collection available at [`/docs/payverse.postman_collection.json`](./docs/payverse.postman_collection.json).
-
-Sample endpoints:
-```
-POST /auth/register
-POST /auth/login
-POST /auth/refresh-token
-GET  /wallet/balance
-POST /wallet/add-money
-POST /payment/transfer
-GET  /notifications
-```
-
----
-
-## Testing
-
-```bash
-# run unit + integration tests for all modules
-mvn test
-
-# generate coverage report (JaCoCo)
-mvn verify
-open target/site/jacoco/index.html
-```
-
-- Unit tests: JUnit 5 + Mockito
-- Integration tests: Testcontainers (real MySQL + Kafka containers, no mocks)
-- Target coverage: 80%+ on service layer across all modules
-
----
-
-## Monitoring & Observability
-
-- Spring Boot Actuator exposes `/actuator/prometheus` on each service.
-- Grafana dashboard (4 panels): JVM heap usage, HTTP request rate, HTTP 5xx error rate, DB connection pool utilization.
-- Structured JSON logs shipped to a central log store.
-
----
-
-## CI/CD
-
-GitHub Actions pipeline:
-1. **`test.yml`** — runs on every PR: `mvn test` → JaCoCo coverage → posts coverage % as a PR comment.
-2. **`deploy.yml`** — runs on merge to `main` (only if `test.yml` passed): builds Docker images → pushes to registry → deploys to AWS EC2, restarts services with zero-downtime rolling restart.
+At this stage there are no exposed API endpoints — the gateway and services have no logic yet. This will change as Week 2 adds the `user-service` auth flow.
 
 ---
 
@@ -199,38 +143,33 @@ GitHub Actions pipeline:
 
 ```
 payverse/
-├── payverse-api-gateway/
-├── payverse-user/
-├── payverse-wallet/
-├── payverse-payment/
-├── payverse-notification/
-├── payverse-ledger/
-├── frontend/                 # React app (added later)
-├── docs/                     # architecture diagrams, Postman collection
-├── docker-compose.yml
-├── pom.xml                   # parent POM
+├── payverse-api-gateway/     (empty scaffold)
+├── payverse-user/            (empty scaffold)
+├── payverse-wallet/          (empty scaffold)
+├── payverse-payment/         (empty scaffold)
+├── payverse-notification/    (empty scaffold)
+├── payverse-ledger/          (empty scaffold)
+├── docker-compose.yml        (MySQL, Redis, Kafka, Zookeeper)
+├── pom.xml                   (parent POM, all 6 modules linked)
+├── .gitignore
+├── LICENSE
 └── README.md
 ```
 
 ---
 
-## Design Decisions
-
-| Decision | Reasoning |
-|---|---|
-| Kafka over direct REST between services | Decouples payment success from downstream notification/ledger failures — a notification outage should never block a payment. |
-| Optimistic locking over pessimistic for wallet updates | Payment updates are short-lived; pessimistic locks would serialize throughput unnecessarily under normal (non-conflicting) load. |
-| Redis for idempotency keys | Sub-millisecond lookups, TTL-based auto-expiry, no schema migration needed for a short-lived key. |
-| Append-only ledger | Guarantees auditability — balances are always derivable from the immutable event log, never silently overwritten. |
-
-*(This section is updated as real decisions are made during the build — not written in advance.)*
-
----
-
 ## Roadmap
 
-- [x] Multi-module Maven scaffold + Docker Compose infra
-- [ ] User service: JWT auth complete
+**Week 1 (6–12 Jul 2026) — Foundation**
+- [x] GitHub repo created, `.gitignore` and MIT license added
+- [x] Multi-module Maven scaffold (6 modules) compiling clean
+- [x] Docker Compose: MySQL running with persistent volume
+- [ ] Docker Compose: Kafka + Zookeeper fully working (listener config in progress)
+- [ ] Base packages added to `payverse-user` (`controller/`, `service/`, `repository/`, `dto/`, `exception/`, `config/`, `model/`)
+- [ ] README polished, repo pushed in clean state
+
+**Week 2 onward**
+- [ ] User service: JWT auth (register/login/refresh) complete
 - [ ] Wallet service: optimistic locking + idempotent add-money
 - [ ] Payment service: Saga-based P2P transfer
 - [ ] Notification service: Kafka + WebSocket push
@@ -248,4 +187,4 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ---
 
-*Built as a hands-on exploration of distributed payment systems architecture.*
+*Built as a hands-on, week-by-week exploration of distributed payment systems architecture. This README is updated to reflect real progress, not aspirational scope.*

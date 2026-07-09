@@ -1,0 +1,53 @@
+version: '3.8'
+
+# All services
+services:
+
+    mysql:
+        image: mysql:8 #Container image to use for the service. This image is pulled from Docker Hub.
+
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: payverse
+
+        ports:
+            - "3306:3306" # HOST:CONTAINER (My laptop : MySQL container) Whenever someone connects to port 3306 on the host, forward that traffic to port 3306 inside the MySQL container.
+
+        volumes:
+            - mysql-data:/var/lib/mysql # Mount the volume to the container's data directory. This ensures that MySQL data persists even if the container is removed.
+
+    redis:
+        image: redis:7-alpine
+
+        ports:
+            - "6379:6379" # HOST:CONTAINER (My laptop : Redis container) Whenever someone connects to port 6379 on the host, forward that traffic to port 6379 inside the Redis container.
+
+    zookeeper:
+        image: confluentinc/cp-zookeeper:7.6.1
+
+        environment:
+            ZOOKEEPER_CLIENT_PORT: 2181
+            ZOOKEEPER_TICK_TIME: 2000 #Zookeeper uses this timing internally for coordination, leader election timeouts, and session management.
+
+        ports:
+            - "2181:2181" # HOST:CONTAINER (My laptop : Zookeeper container) Whenever someone connects to port 2181 on the host, forward that traffic to port 2181 inside the Zookeeper container.
+
+    kafka:
+        image: confluentinc/cp-kafka:7.6.1
+
+        depends_on:
+            - zookeeper
+
+        ports:
+            - "9092:9092"
+
+        environment:
+            KAFKA_BROKER_ID: 1
+            KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+            KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+            KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+            KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+volumes:
+  mysql-data:
