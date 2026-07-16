@@ -24,7 +24,7 @@ public class BaseResponse<T> {
 
 
     // Static factory methods improve readability, reduce duplicate object creation code, and centralize object initialization. If the response structure changes later (for example, adding metadata or trace IDs), only the factory methods need to be updated instead of every controller.
-    public static <T> BaseResponse<T> success(T data, String message) {
+  public static <T> BaseResponse<T> success(T data, String message) {
     return new BaseResponse<>(
             true,
             message,
@@ -33,12 +33,11 @@ public class BaseResponse<T> {
     );
 }
 
-
-    public static <T> BaseResponse<T> error(String message) {
+public static <T> BaseResponse<T> error(T data, String message) {
     return new BaseResponse<>(
             false,
             message,
-            null,
+            data,
             LocalDateTime.now()
     );
 }
@@ -74,4 +73,5 @@ public class BaseResponse<T> {
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
     }
+
 }
