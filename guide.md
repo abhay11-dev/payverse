@@ -72,3 +72,16 @@ Think of Actuator as the health monitor for your application.
 
 
 We make BaseResponse generic because different APIs return different types of data. Some endpoints return a UserDto, some return a WalletDto, some return a list of objects, and some return just a string or no data at all. Using a generic type parameter (<T>) allows us to keep one reusable response wrapper while preserving compile-time type safety and avoiding unsafe casting with Object.
+
+
+
+
+
+Annotation	Purpose
+@Entity	Makes this a JPA entity.
+@Table	Creates the users table and enforces unique constraints.
+@Id	Primary key.
+@GeneratedValue	Auto-increment ID in MySQL.
+@Column	Defines column constraints like nullable, length, and unique.
+@Enumerated(EnumType.STRING)	Stores enum values as readable strings (CUSTOMER) instead of integers.
+@PrePersist	Automatically sets createdAt before the entity is first saved.

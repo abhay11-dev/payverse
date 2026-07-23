@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.payverse.userservice.exception.UserAlreadyExistsException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -14,9 +15,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /**
-     * Handles validation errors (@Valid)
-     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<BaseResponse<Map<String, String>>> handleValidationException(
             MethodArgumentNotValidException ex) {
@@ -29,24 +27,36 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(BaseResponse.error(
-                        errors,
-                        "Validation failed"
-                ));
+                .body(BaseResponse.error(errors, "Validation failed"));
     }
 
-    /**
-     * Handles all unexpected exceptions
-     */
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<BaseResponse<Object>> handleUserAlreadyExists(
+            UserAlreadyExistsException ex) {
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(BaseResponse.error(null, ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<BaseResponse<Object>> handleGenericException(Exception ex) {
+
+        ex.printStackTrace(); 
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(BaseResponse.error(
                         null,
-                        "Something went wrong"
+                        ex.getClass().getSimpleName() + " : " + ex.getMessage()
                 ));
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<BaseResponse<Object>> handleUserNotFound(
+        UserNotFoundException ex) {
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(BaseResponse.error(null,ex.getMessage()));
+}
 }
