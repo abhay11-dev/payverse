@@ -85,3 +85,45 @@ Annotation	Purpose
 @Column	Defines column constraints like nullable, length, and unique.
 @Enumerated(EnumType.STRING)	Stores enum values as readable strings (CUSTOMER) instead of integers.
 @PrePersist	Automatically sets createdAt before the entity is first saved.
+
+
+
+
+
+Flyway is a database migration tool that manages schema changes using versioned SQL scripts. Instead of letting Hibernate modify the database automatically, every schema change is written as a migration (such as V1__create_users_table.sql), committed to Git, and applied consistently across development, staging, and production. Hibernate is typically configured with ddl-auto=validate so it verifies the schema without changing it. This makes database evolution predictable, reviewable, and safe.
+
+
+In production, we separate these responsibilities:
+Flyway → Creates and modifies the database schema.
+Hibernate → Maps Java objects to database tables and validates that the schema matches.
+
+
+Application Starts
+        │
+        ▼
+Datasource connects
+        │
+        ▼
+Flyway starts
+        │
+        ▼
+Reads flyway_schema_history
+        │
+        ▼
+Pending migrations?
+        │
+   ┌────┴────┐
+   │         │
+  Yes       No
+   │         │
+Run SQL    Skip
+   │         │
+   └────┬────┘
+        ▼
+Hibernate validates schema
+        ▼
+Application starts
+
+
+
+Once a migration has been applied to a shared environment (or production), treat it as immutable. Never edit it. Create a new migration instead.
