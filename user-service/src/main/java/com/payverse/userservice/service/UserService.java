@@ -25,4 +25,6 @@ public interface UserService {
 List<User> searchUsersByEmail(String keyword);
 
 List<User> getLatestUsers();
+
+User getUserByEmail(String email);
 }

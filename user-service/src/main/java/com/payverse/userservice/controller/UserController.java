@@ -118,4 +118,16 @@ public BaseResponse<List<User>> latestUsers() {
     );
 }
 
+
+@GetMapping("/email/{email}")
+public BaseResponse<User> getUserByEmail(
+        @PathVariable String email) {
+
+    User user = userService.getUserByEmail(email);
+
+    return BaseResponse.success(
+            user,
+            "User fetched successfully"
+    );
+}
 }

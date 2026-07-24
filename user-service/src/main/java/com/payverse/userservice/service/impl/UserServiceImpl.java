@@ -96,4 +96,13 @@ public List<User> searchUsersByEmail(String keyword) {
 public List<User> getLatestUsers() {
     return userRepository.findTop5ByOrderByCreatedAtDesc();
 }
+
+@Override
+public User getUserByEmail(String email) {
+
+    return userRepository.findByEmail(email)
+            .orElseThrow(() ->
+                    new UserNotFoundException(
+                            "User not found with email: " + email));
+}
 }
