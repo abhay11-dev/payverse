@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 public class TestController {
 
-    @GetMapping("/test")
+    @GetMapping("/test/protected")
     public BaseResponse<Map<String, String>> test() {
 
         return BaseResponse.success(
@@ -31,10 +31,10 @@ public class TestController {
     }
 
 
-    @GetMapping("/error")
-    public BaseResponse<String> testError() {
-        throw new RuntimeException("Testing Global Exception Handler");
-    }
+  @GetMapping("/test/error")
+public BaseResponse<String> testError() {
+    throw new RuntimeException("Testing Global Exception Handler");
+}
 
 
     @PostMapping("/test")

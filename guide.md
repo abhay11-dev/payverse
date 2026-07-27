@@ -127,3 +127,12 @@ Application starts
 
 
 Once a migration has been applied to a shared environment (or production), treat it as immutable. Never edit it. Create a new migration instead.
+
+
+
+JWT: Header: Metadata: HMAC SHA-256
+     Payload: Claims: Username, expiry and all data
+     Signature: Created from Header + payload + secret key
+     
+
+JWTs are signed but not encrypted by default. Anyone possessing the token can decode its payload, so only non-sensitive claims like the username, user ID, or roles should be stored. Passwords and other secrets must never be included.
