@@ -17,7 +17,6 @@ public class SecurityConfig {
         this.jwtAuthFilter = jwtAuthFilter;
     }
 
-
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http) throws Exception {
@@ -28,10 +27,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
 
                 .requestMatchers(
-                    "/api/test/jwt/**",
-                    "/health",
-                     "/api/v1/users/register"
-                ).permitAll()
+    "/health",
+    "/api/test/jwt/**",
+    "/api/v1/auth/**"
+).permitAll()
 
                 .anyRequest().authenticated()
             )
@@ -43,7 +42,6 @@ public class SecurityConfig {
 
         return http.build();
     }
-
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {

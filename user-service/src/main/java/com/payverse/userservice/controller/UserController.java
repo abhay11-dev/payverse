@@ -20,17 +20,7 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping("/register")
-    public BaseResponse<User> register(
-            @Valid @RequestBody CreateUserRequest request) {
-
-        User user = userService.register(request);
-
-        return BaseResponse.success(
-                user,
-                "User registered successfully"
-        );
-    }
+ 
 
     @GetMapping
     public BaseResponse<List<User>> getAllUsers() {
