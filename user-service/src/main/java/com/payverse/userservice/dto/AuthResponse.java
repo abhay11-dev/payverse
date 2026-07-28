@@ -2,30 +2,33 @@ package com.payverse.userservice.dto;
 
 public class AuthResponse {
 
-    private String token;
+    private String accessToken;
+    private String refreshToken;
     private String type;
 
-    public AuthResponse() {
-    }
 
-    public AuthResponse(String token, String type) {
-        this.token = token;
+    public AuthResponse(
+            String accessToken,
+            String refreshToken,
+            String type) {
+
+        this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
         this.type = type;
     }
 
-    public String getToken() {
-        return token;
+
+    public String getAccessToken() {
+        return accessToken;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+
+    public String getRefreshToken() {
+        return refreshToken;
     }
+
 
     public String getType() {
         return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
     }
 }

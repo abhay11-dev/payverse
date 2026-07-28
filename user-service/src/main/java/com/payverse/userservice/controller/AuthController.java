@@ -16,6 +16,12 @@ import com.payverse.userservice.security.JwtTokenProvider;
 import com.payverse.userservice.exception.InvalidCredentialsException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import com.payverse.userservice.dto.RefreshTokenRequest;
+import com.payverse.userservice.security.RedisTokenService;
+import com.payverse.userservice.security.RefreshTokenProvider;
+
+import com.payverse.userservice.dto.LogoutRequest;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
@@ -25,19 +31,25 @@ public class AuthController {
 private final UserRepository userRepository;
 private final BCryptPasswordEncoder passwordEncoder;
 private final JwtTokenProvider jwtTokenProvider;
+private final RedisTokenService redisTokenService;
+private final RefreshTokenProvider refreshTokenProvider;
 
     private final UserService userService;
 
-   public AuthController(
+public AuthController(
         UserService userService,
         UserRepository userRepository,
         BCryptPasswordEncoder passwordEncoder,
-        JwtTokenProvider jwtTokenProvider) {
+        JwtTokenProvider jwtTokenProvider,
+        RedisTokenService redisTokenService,
+        RefreshTokenProvider refreshTokenProvider) {
 
     this.userService = userService;
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.jwtTokenProvider = jwtTokenProvider;
+    this.redisTokenService = redisTokenService;
+    this.refreshTokenProvider = refreshTokenProvider;
 }
     @PostMapping("/register")
     public BaseResponse<User> register(
@@ -80,15 +92,94 @@ if (!matches) {
 
         throw new InvalidCredentialsException("Invalid email or password");
     }
+String accessToken =
+        jwtTokenProvider.generateToken(user.getEmail());
 
-    String token = jwtTokenProvider.generateToken(user.getEmail());
 
-    AuthResponse response =
-            new AuthResponse(token, "Bearer");
+String refreshToken =
+        refreshTokenProvider.generateRefreshToken();
 
+
+redisTokenService.saveRefreshToken(
+        user.getId(),
+        refreshToken
+);
+
+
+AuthResponse response =
+        new AuthResponse(
+                accessToken,
+                refreshToken,
+                "Bearer"
+        );
     return BaseResponse.success(
             response,
             "Login successful");
+}
+
+
+@PostMapping("/refresh-token")
+public BaseResponse<AuthResponse> refreshToken(
+        @Valid @RequestBody RefreshTokenRequest request) {
+
+
+    Long userId =
+            redisTokenService.findUserIdByRefreshToken(
+                    request.getRefreshToken()
+            );
+
+
+    if (userId == null) {
+
+        throw new InvalidCredentialsException(
+                "Invalid refresh token"
+        );
+    }
+
+
+    User user =
+            userRepository.findById(userId)
+                    .orElseThrow(() ->
+                            new InvalidCredentialsException(
+                                    "User not found"
+                            ));
+
+
+    String newAccessToken =
+            jwtTokenProvider.generateToken(
+                    user.getEmail()
+            );
+
+
+    AuthResponse response =
+            new AuthResponse(
+                    newAccessToken,
+                    request.getRefreshToken(),
+                    "Bearer"
+            );
+
+
+    return BaseResponse.success(
+            response,
+            "Token refreshed successfully"
+    );
+}
+
+
+@PostMapping("/logout")
+public BaseResponse<Object> logout(
+        @Valid @RequestBody LogoutRequest request) {
+
+
+    redisTokenService.deleteRefreshToken(
+            request.getUserId()
+    );
+
+
+    return BaseResponse.success(
+            null,
+            "Logout successful"
+    );
 }
 
 
