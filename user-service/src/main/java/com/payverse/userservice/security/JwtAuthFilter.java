@@ -35,7 +35,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+
         String authHeader = request.getHeader("Authorization");
+        System.out.println("Authorization Header: " + authHeader);
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
 
@@ -46,34 +48,37 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 Claims claims = jwtTokenProvider.extractClaims(token);
 
                 String email = claims.getSubject();
+                System.out.println("JWT Email: " + email);
 
-                User user = userRepository
-                        .findByEmail(email)
-                        .orElse(null);
+             User user = userRepository
+        .findByEmail(email)
+        .orElse(null);
 
-                if (user != null) {
+System.out.println("User Found: " + user);
 
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    user,
-                                    null,
-                                    List.of(
-                                            new SimpleGrantedAuthority(
-                                                    "ROLE_" + user.getRole().name()
-                                            )
-                                    )
-                            );
+if (user != null) {
 
-                    SecurityContextHolder
-        .getContext()
-        .setAuthentication(authentication);
+    UsernamePasswordAuthenticationToken authentication =
+            new UsernamePasswordAuthenticationToken(
+                    user,
+                    null,
+                    List.of(
+                            new SimpleGrantedAuthority(
+                                    "ROLE_" + user.getRole().name()
+                            )
+                    )
+            );
 
+    SecurityContextHolder.getContext().setAuthentication(authentication);
 
-System.out.println(
+    System.out.println("Authentication Set: "
+            + SecurityContextHolder.getContext().getAuthentication());
+
+            System.out.println(
     "JWT AUTH CREATED : "
     + authentication.getName()
-);
-                }
+            );
+}
             }
         }
 

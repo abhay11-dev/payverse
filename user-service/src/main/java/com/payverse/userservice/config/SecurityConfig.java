@@ -28,7 +28,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
 
                 .requestMatchers(
-                    "/api/test/jwt/**"
+                    "/api/test/jwt/**",
+                    "/health",
+                     "/api/v1/users/register"
                 ).permitAll()
 
                 .anyRequest().authenticated()
