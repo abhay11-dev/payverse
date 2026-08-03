@@ -136,3 +136,11 @@ JWT: Header: Metadata: HMAC SHA-256
      
 
 JWTs are signed but not encrypted by default. Anyone possessing the token can decode its payload, so only non-sensitive claims like the username, user ID, or roles should be stored. Passwords and other secrets must never be included.
+
+
+
+
+
+
+
+We don't use a permanent JWT because JWT is stateless and difficult to revoke. If compromised, a long-lived JWT gives an attacker access until expiry. We also don't use refresh tokens for every API call because refresh tokens are high-value credentials that require server-side validation and increase latency. Instead, we use short-lived JWT access tokens for fast stateless authorization and long-lived refresh tokens for session management. Refresh tokens are stored server-side, rotated, and revoked on logout. The exact expiry depends on the business risk: fintech applications prioritize security with shorter access token lifetimes, while lower-risk applications may choose longer sessions for better UX
