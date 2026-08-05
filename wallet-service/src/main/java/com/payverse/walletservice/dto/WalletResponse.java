@@ -1,9 +1,10 @@
 package com.payverse.walletservice.dto;
 
 import java.math.BigDecimal;
+import java.io.Serializable;
 
-public class WalletResponse {
-
+public class WalletResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
     private Long walletId;
     private Long userId;
     private BigDecimal balance;

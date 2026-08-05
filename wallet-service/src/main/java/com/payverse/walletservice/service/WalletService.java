@@ -9,4 +9,10 @@ public interface WalletService {
     WalletResponse createWallet(Long userId);
 
     BigDecimal getBalance(Long userId);
+
+    WalletResponse addMoneyIntent(
+        Long userId,
+        BigDecimal amount,
+        String idempotencyKey
+);
 }

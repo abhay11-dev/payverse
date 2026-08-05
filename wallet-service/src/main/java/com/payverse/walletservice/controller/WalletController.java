@@ -6,6 +6,9 @@ import com.payverse.walletservice.service.WalletService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import com.payverse.walletservice.dto.AddMoneyRequest;
+import org.springframework.http.ResponseEntity;
+
 
 import java.math.BigDecimal;
 
@@ -29,4 +32,17 @@ public class WalletController {
     public BigDecimal getBalance(@PathVariable Long userId) {
         return walletService.getBalance(userId);
     }
+
+    @PostMapping("/add-money")
+    public ResponseEntity<WalletResponse> addMoney(
+        @Valid @RequestBody AddMoneyRequest request) {
+
+    WalletResponse response = walletService.addMoneyIntent(
+            request.getUserId(),
+            request.getAmount(),
+            request.getIdempotencyKey()
+    );
+
+    return ResponseEntity.ok(response);
+}
 }
