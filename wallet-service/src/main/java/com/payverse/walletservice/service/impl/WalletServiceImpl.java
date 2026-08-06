@@ -9,6 +9,7 @@ import com.payverse.walletservice.exception.WalletNotFoundException;
 import org.springframework.data.redis.core.RedisTemplate;
 import java.time.Duration;
 import java.math.BigDecimal;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class WalletServiceImpl implements WalletService {
@@ -56,8 +57,8 @@ public BigDecimal getBalance(Long userId) {
 
     return wallet.getBalance();
     }
-
 @Override
+@Transactional
 public WalletResponse addMoneyIntent(
         Long userId,
         BigDecimal amount,
@@ -94,6 +95,12 @@ public WalletResponse addMoneyIntent(
                         "Wallet not found for user: " + userId
                 )
         );
+
+try {
+    Thread.sleep(5000);
+} catch (InterruptedException e) {
+    Thread.currentThread().interrupt();
+}
 
 wallet.setBalance(wallet.getBalance().add(amount));
 
