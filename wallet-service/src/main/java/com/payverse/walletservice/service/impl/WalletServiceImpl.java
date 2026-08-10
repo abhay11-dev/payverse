@@ -117,4 +117,34 @@ redisTemplate.opsForValue().set(
 );
 return response;
 }
+
+@Override
+@Transactional
+public WalletResponse debitMoney(
+        Long userId,
+        BigDecimal amount
+) {
+
+    Wallet wallet = walletRepository.findByUserId(userId)
+            .orElseThrow(() ->
+                    new WalletNotFoundException(
+                            "Wallet not found for user: " + userId
+                    )
+            );
+
+    if (wallet.getBalance().compareTo(amount) < 0) {
+        throw new RuntimeException("Insufficient wallet balance");
+    }
+
+    wallet.setBalance(wallet.getBalance().subtract(amount));
+
+    Wallet updatedWallet = walletRepository.save(wallet);
+
+    WalletResponse response = new WalletResponse();
+    response.setWalletId(updatedWallet.getId());
+    response.setUserId(updatedWallet.getUserId());
+    response.setBalance(updatedWallet.getBalance());
+
+    return response;
+}
 }

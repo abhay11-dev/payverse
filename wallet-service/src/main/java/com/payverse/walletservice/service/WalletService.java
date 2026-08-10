@@ -15,4 +15,9 @@ public interface WalletService {
         BigDecimal amount,
         String idempotencyKey
 );
+
+WalletResponse debitMoney(
+        Long userId,
+        BigDecimal amount
+);
 }

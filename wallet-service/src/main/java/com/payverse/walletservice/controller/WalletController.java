@@ -45,4 +45,16 @@ public class WalletController {
 
     return ResponseEntity.ok(response);
 }
+
+@PostMapping("/debit")
+public ResponseEntity<WalletResponse> debitMoney(
+        @Valid @RequestBody AddMoneyRequest request) {
+
+    WalletResponse response = walletService.debitMoney(
+            request.getUserId(),
+            request.getAmount()
+    );
+
+    return ResponseEntity.ok(response);
+}
 }
