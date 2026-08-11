@@ -20,4 +20,10 @@ WalletResponse debitMoney(
         Long userId,
         BigDecimal amount
 );
+
+WalletResponse creditMoney(
+        Long userId,
+        BigDecimal amount,
+        String idempotencyKey
+);
 }

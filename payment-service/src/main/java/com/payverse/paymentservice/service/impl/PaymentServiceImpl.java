@@ -1,9 +1,9 @@
 package com.payverse.paymentservice.service.impl;
 
 import com.payverse.paymentservice.client.WalletClient;
-import com.payverse.paymentservice.dto.PaymentEvent;
+import com.payverse.paymentservice.event.PaymentEvent;
+import com.payverse.paymentservice.event.PaymentEventPublisher;
 import com.payverse.paymentservice.service.PaymentService;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -11,17 +11,15 @@ import java.math.BigDecimal;
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
-    private static final String PAYMENT_EVENTS_TOPIC = "payment-events";
-
     private final WalletClient walletClient;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final PaymentEventPublisher paymentEventPublisher;
 
     public PaymentServiceImpl(
             WalletClient walletClient,
-            KafkaTemplate<String, String> kafkaTemplate) {
+            PaymentEventPublisher paymentEventPublisher) {
 
         this.walletClient = walletClient;
-        this.kafkaTemplate = kafkaTemplate;
+        this.paymentEventPublisher = paymentEventPublisher;
     }
 
     @Override
@@ -52,42 +50,61 @@ public class PaymentServiceImpl implements PaymentService {
                 transactionId + "-debit"
         );
 
-        // 2. Credit receiver
-        walletClient.addMoney(
-                receiverUserId,
-                amount,
-                transactionId + "-credit"
-        );
-
-        // 3. Publish successful payment event
-        PaymentEvent event = new PaymentEvent(
-                senderUserId,
-                receiverUserId,
-                amount,
-                "PAYMENT_SUCCESS"
-        );
-
-       String eventJson = """
-        {
-          "senderUserId": %d,
-          "receiverUserId": %d,
-          "amount": %s,
-          "status": "PAYMENT_SUCCESS"
-        }
-        """.formatted(
-        senderUserId,
-        receiverUserId,
-        amount
-);
-
-kafkaTemplate.send(
-        PAYMENT_EVENTS_TOPIC,
-        transactionId,
-        eventJson
-);
-
         System.out.println(
-                "Payment successful: " + transactionId
+                "Sender debited successfully: " + senderUserId
         );
+
+        // 2. Credit receiver
+        try {
+
+            walletClient.addMoney(
+                    receiverUserId,
+                    amount,
+                    transactionId + "-credit"
+            );
+
+            // 3. Receiver credit succeeded
+            PaymentEvent successEvent = new PaymentEvent(
+                    transactionId,
+                    senderUserId,
+                    receiverUserId,
+                    amount,
+                    "PAYMENT_SUCCESS"
+            );
+
+            paymentEventPublisher.publishPaymentSuccess(
+                    successEvent
+            );
+
+            System.out.println(
+                    "Payment successful: " + transactionId
+            );
+
+        } catch (Exception creditException) {
+
+            // 4. Receiver credit failed
+            PaymentEvent failedEvent = new PaymentEvent(
+                    transactionId,
+                    senderUserId,
+                    receiverUserId,
+                    amount,
+                    "PAYMENT_FAILED"
+            );
+
+            paymentEventPublisher.publishPaymentFailed(
+                    failedEvent
+            );
+
+            System.out.println(
+                    "PAYMENT_FAILED published for: "
+                            + transactionId
+            );
+
+            throw new RuntimeException(
+                    "Receiver credit failed. "
+                            + "Compensation event published.",
+                    creditException
+            );
+        }
     }
 }

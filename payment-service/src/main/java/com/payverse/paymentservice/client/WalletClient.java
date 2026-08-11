@@ -56,4 +56,23 @@ public class WalletClient {
                 .retrieve()
                 .body(WalletResponse.class);
     }
+
+    public WalletResponse credit(
+            Long userId,
+            BigDecimal amount,
+            String idempotencyKey) {
+
+        AddMoneyRequest request = new AddMoneyRequest();
+
+        request.setUserId(userId);
+        request.setAmount(amount);
+        request.setIdempotencyKey(idempotencyKey);
+
+        return restClient.post()
+                .uri("/wallets/credit")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(WalletResponse.class);
+    }
 }

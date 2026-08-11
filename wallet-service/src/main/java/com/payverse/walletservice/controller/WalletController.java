@@ -57,4 +57,17 @@ public ResponseEntity<WalletResponse> debitMoney(
 
     return ResponseEntity.ok(response);
 }
+
+@PostMapping("/credit")
+public ResponseEntity<WalletResponse> creditMoney(
+        @Valid @RequestBody AddMoneyRequest request) {
+
+    WalletResponse response = walletService.creditMoney(
+            request.getUserId(),
+            request.getAmount(),
+            request.getIdempotencyKey()
+    );
+
+    return ResponseEntity.ok(response);
+}
 }
