@@ -1,0 +1,10 @@
+CREATE TABLE notifications (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    message VARCHAR(1000) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at DATETIME NOT NULL,
+
+    PRIMARY KEY (id)
+);

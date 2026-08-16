@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>PayVerse WebSocket Test</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.1.1/bundles/stomp.umd.min.js"></script>
+</head>
+
+<body>
+
+<h2>PayVerse Notification WebSocket Test</h2>
+
+<button onclick="connect()">Connect</button>
+<button onclick="disconnect()">Disconnect</button>
+
+<pre id="output"></pre>
+
+<script>
+
+let client = null;
+
+function log(message) {
+    document.getElementById("output").textContent += message + "\n";
+}
+
+function connect() {
+
+    client = new StompJs.Client({
+
+        brokerURL: "ws://localhost:8083/ws",
+
+        reconnectDelay: 5000,
+
+        onConnect: function () {
+
+            log("CONNECTED to PayVerse WebSocket");
+
+            client.subscribe(
+                "/user/1/notifications",
+                function (message) {
+
+                    log("NOTIFICATION RECEIVED:");
+
+                    log(message.body);
+                }
+            );
+
+            log("SUBSCRIBED to /user/1/notifications");
+        },
+
+        onStompError: function (frame) {
+
+            log("STOMP ERROR:");
+            log(frame.headers["message"]);
+            log(frame.body);
+        },
+
+        onWebSocketError: function (error) {
+
+            log("WEBSOCKET ERROR:");
+            log(error);
+        }
+    });
+
+    client.activate();
+}
+
+function disconnect() {
+
+    if (client) {
+
+        client.deactivate();
+
+        log("DISCONNECTED");
+    }
+}
+
+</script>
+
+</body>
+</html>
