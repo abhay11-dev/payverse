@@ -178,3 +178,5 @@ Hibernate:
     where
         id=? 
         and version=?
+2026-08-17T10:07:19.266+05:30  INFO 81398 --- [wallet-service] [xecutorLoop-1-1] i.l.core.protocol.ConnectionWatchdog     : Reconnecting, last destination was localhost/127.0.0.1:6379
+2026-08-17T10:07:19.745+05:30  WARN 81398 --- [wallet-service] [xecutorLoop-1-1] i.l.core.protocol.ConnectionWatchdog     : Cannot reconnect to [localhost/<unresolved>:6379]: Connection refused: localhost/127.0.0.1:6379
