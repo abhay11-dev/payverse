@@ -1,4 +1,4 @@
-package com.payverse.paymentservice.event;
+package com.payverse.ledgerservice.event;
 
 import java.math.BigDecimal;
 

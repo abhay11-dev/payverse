@@ -1,6 +1,7 @@
 package com.payverse.paymentservice.service.impl;
 
 import com.payverse.paymentservice.client.WalletClient;
+import com.payverse.paymentservice.dto.WalletResponse;
 import com.payverse.paymentservice.event.PaymentEvent;
 import com.payverse.paymentservice.event.PaymentEventPublisher;
 import com.payverse.paymentservice.service.PaymentService;
@@ -44,52 +45,76 @@ public class PaymentServiceImpl implements PaymentService {
                 "payment-" + System.currentTimeMillis();
 
         // 1. Debit sender
-        walletClient.debit(
-                senderUserId,
-                amount,
-                transactionId + "-debit"
-        );
+        WalletResponse senderWallet =
+                walletClient.debit(
+                        senderUserId,
+                        amount,
+                        transactionId + "-debit"
+                );
 
         System.out.println(
-                "Sender debited successfully: " + senderUserId
+                "Sender debited successfully: "
+                        + senderUserId
+                        + " | balanceAfter="
+                        + senderWallet.getBalance()
         );
 
         // 2. Credit receiver
         try {
 
-            walletClient.addMoney(
-                    receiverUserId,
-                    amount,
-                    transactionId + "-credit"
+            WalletResponse receiverWallet =
+                    walletClient.addMoney(
+                            receiverUserId,
+                            amount,
+                            transactionId + "-credit"
+                    );
+
+            System.out.println(
+                    "Receiver credited successfully: "
+                            + receiverUserId
+                            + " | balanceAfter="
+                            + receiverWallet.getBalance()
             );
 
-            // 3. Receiver credit succeeded
-            PaymentEvent successEvent = new PaymentEvent(
-                    transactionId,
-                    senderUserId,
-                    receiverUserId,
-                    amount,
-                    "PAYMENT_SUCCESS"
-            );
+            // 3. Create successful payment event
+            PaymentEvent successEvent =
+                    new PaymentEvent(
+                            transactionId,
+                            senderUserId,
+                            receiverUserId,
+                            senderWallet.getWalletId(),
+                            receiverWallet.getWalletId(),
+                            amount,
+                            senderWallet.getBalance(),
+                            receiverWallet.getBalance(),
+                            "PAYMENT_SUCCESS"
+                    );
 
+            // 4. Publish successful payment event
             paymentEventPublisher.publishPaymentSuccess(
                     successEvent
             );
 
             System.out.println(
-                    "Payment successful: " + transactionId
+                    "Payment successful: "
+                            + transactionId
             );
 
         } catch (Exception creditException) {
 
-            // 4. Receiver credit failed
-            PaymentEvent failedEvent = new PaymentEvent(
-                    transactionId,
-                    senderUserId,
-                    receiverUserId,
-                    amount,
-                    "PAYMENT_FAILED"
-            );
+            // Receiver credit failed
+            PaymentEvent failedEvent =
+                    new PaymentEvent(
+                            transactionId,
+                            senderUserId,
+                            receiverUserId,
+                            null,
+                            null,
+                            amount,
+                            null,
+                            null,
+                            "PAYMENT_FAILED"
+                    );
 
             paymentEventPublisher.publishPaymentFailed(
                     failedEvent
