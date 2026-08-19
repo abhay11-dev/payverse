@@ -71,6 +71,88 @@ PayVerse is a self-initiated project simulating a real-world digital payments pl
      └───────────┘
 ```
 
+
+
+
+```
+                         ┌───────────────────┐
+                         │    API Gateway    │
+                         └─────────┬─────────┘
+                                   │
+                                   ▼
+                         ┌───────────────────┐
+                         │  Payment Service  │
+                         └─────────┬─────────┘
+                                   │
+                            debit / credit
+                                   │
+                                   ▼
+                         ┌───────────────────┐
+                         │  Wallet Service   │
+                         │                   │
+                         │ Wallet            │
+                         │ balance           │
+                         │ @Version          │
+                         │      ↑            │
+                         │ optimistic lock   │
+                         └─────────┬─────────┘
+                                   │
+                                   ▼
+                         ┌───────────────────┐
+                         │  Wallet MySQL DB  │
+                         └───────────────────┘
+
+```
+
+
+
+```
+Payment event
+     │
+     ▼
+┌────────────────────┐
+│   Kafka            │
+│ payment-events     │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│   Ledger Service   │
+│                    │
+│ append LedgerEntry │
+└─────────┬──────────┘
+          │
+          ▼
+┌────────────────────┐
+│   Ledger MySQL DB  │
+└─────────┬──────────┘
+          │
+          │
+          │ periodically read
+          ▼
+┌──────────────────────────┐
+│   Reconciliation Job     │  
+│                          │   
+│ SUM(ledger entries)      │
+│          ↓               │
+│ Compare with             │
+│ wallet.balance           │
+└───────────┬──────────────┘
+            │
+Auto-correcting based solely on the ledger is dangerous because a mismatch doesn't tell us which side is wrong. The ledger itself could be incomplete or contain a duplicate, so blindly changing the wallet could compound the error and destroy useful evidence. In a payments system I'd alert and investigate first, then perform a controlled, auditable correction once the root cause is established.
+             ▼
+       ┌───────────┐
+       │  Match?   │
+       └─────┬─────┘
+             │
+       ┌─────┴─────┐
+       │           │
+      YES          NO
+       │           │
+       ▼           ▼
+     Normal      Alert /
+                 investigation
+```
 **Patterns planned (not yet built):** idempotency via Redis keys, optimistic locking on wallet balance updates, Saga-based compensation on payment failure, append-only event-sourced ledger, token-bucket rate limiting at the gateway.
 
 ---
