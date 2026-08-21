@@ -1,34 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-        https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-<modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
+    <!-- Spring Boot parent -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.3</version>
+        <relativePath/>
+    </parent>
 
-<parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.5.3</version>
-    <relativePath/>
-</parent>
+    <!-- PayVerse parent project -->
+    <groupId>com.payverse</groupId>
+    <artifactId>payverse-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
+    <!-- Project-wide properties -->
+    <properties>
+        <java.version>21</java.version>
+        <spring-cloud.version>2025.0.3</spring-cloud.version>
+    </properties>
 
-<groupId>com.payverse</groupId>
-<artifactId>payverse-parent</artifactId>
-<version>1.0.0-SNAPSHOT</version>
+    <!-- Spring Cloud dependency versions -->
+    <dependencyManagement>
+        <dependencies>
 
-<packaging>pom</packaging>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
-<modules>
-    <module>user-service</module>
-    <module>wallet-service</module>
-    <module>payment-service</module>
-    <module>ledger-service</module>
-    <module>notification-service</module>
-    <module>api-gateway</module>
-</modules>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- PayVerse services -->
+    <modules>
+        <module>user-service</module>
+        <module>wallet-service</module>
+        <module>payment-service</module>
+        <module>ledger-service</module>
+        <module>notification-service</module>
+        <module>api-gateway</module>
+    </modules>
 
 </project>

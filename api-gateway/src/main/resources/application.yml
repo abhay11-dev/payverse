@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: api-gateway
+
+server:
+  port: 8080
+
+# Route sketch for PayVerse services.
+# Actual Gateway route implementation will be added later.
+
+# /users/**           -> User Service         (localhost:8085)
+# /wallets/**         -> Wallet Service       (localhost:8081)
+# /payments/**        -> Payment Service      (localhost:8082)
+# /notifications/**   -> Notification Service (localhost:8083)
+# /ledger/**          -> Ledger Service       (localhost:8084)
+# /admin/**           -> Ledger Service       (localhost:8084)
