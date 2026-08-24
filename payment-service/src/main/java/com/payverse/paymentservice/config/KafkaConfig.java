@@ -18,9 +18,12 @@ import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 public class KafkaConfig {
+    @Value("${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}")
+    private String bootstrapServers;
 
     @Bean
     public ProducerFactory<String, PaymentEvent> producerFactory() {
@@ -29,7 +32,7 @@ public class KafkaConfig {
 
         config.put(
                 ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                "localhost:9092"
+                bootstrapServers
         );
 
         config.put(
@@ -72,7 +75,7 @@ public class KafkaConfig {
 
         config.put(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                "localhost:9092"
+                bootstrapServers
         );
 
         config.put(

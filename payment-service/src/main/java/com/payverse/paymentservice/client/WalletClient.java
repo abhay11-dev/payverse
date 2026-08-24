@@ -4,20 +4,23 @@ import com.payverse.paymentservice.dto.AddMoneyRequest;
 import com.payverse.paymentservice.dto.WalletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 
 @Component
 public class WalletClient {
 
-    private final RestClient restClient;
+        private final RestTemplate restTemplate;
+        private final String baseUrl;
 
-    public WalletClient() {
-        this.restClient = RestClient.builder()
-                .baseUrl("http://localhost:8081")
-                .build();
-    }
+        public WalletClient(
+                        @Value("${WALLET_SERVICE_URL:http://localhost:8081}") String baseUrl) {
+
+                this.baseUrl = baseUrl;
+                this.restTemplate = new RestTemplate();
+        }
 
     public WalletResponse debit(
             Long userId,
@@ -30,12 +33,11 @@ public class WalletClient {
         request.setAmount(amount);
         request.setIdempotencyKey(idempotencyKey);
 
-        return restClient.post()
-                .uri("/wallets/debit")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(request)
-                .retrieve()
-                .body(WalletResponse.class);
+        return restTemplate.postForObject(
+                baseUrl + "/wallets/debit",
+                request,
+                WalletResponse.class
+        );
     }
 
     public WalletResponse addMoney(
@@ -49,12 +51,11 @@ public class WalletClient {
         request.setAmount(amount);
         request.setIdempotencyKey(idempotencyKey);
 
-        return restClient.post()
-                .uri("/wallets/add-money")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(request)
-                .retrieve()
-                .body(WalletResponse.class);
+        return restTemplate.postForObject(
+                baseUrl + "/wallets/add-money",
+                request,
+                WalletResponse.class
+        );
     }
 
     public WalletResponse credit(
@@ -68,11 +69,10 @@ public class WalletClient {
         request.setAmount(amount);
         request.setIdempotencyKey(idempotencyKey);
 
-        return restClient.post()
-                .uri("/wallets/credit")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(request)
-                .retrieve()
-                .body(WalletResponse.class);
+        return restTemplate.postForObject(
+                baseUrl + "/wallets/credit",
+                request,
+                WalletResponse.class
+        );
     }
 }
