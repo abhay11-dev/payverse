@@ -2,15 +2,135 @@ spring:
   application:
     name: api-gateway
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+
+          # ========================================================
+          # GLOBAL CORS — API GATEWAY ONLY
+          # ========================================================
+
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - "http://localhost:3000"
+                  - "http://localhost:5173"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
+
+          # ========================================================
+          # ROUTES
+          # ========================================================
+
+          routes:
+
+            # ======================================================
+            # USER SERVICE :8085
+            # ======================================================
+
+            - id: user-auth-service
+              uri: http://localhost:8085
+              predicates:
+                - Path=/api/v1/auth/**
+              filters:
+                - name: RateLimit
+                  args:
+                    limit: 10
+                    windowSeconds: 60
+
+            - id: user-service
+              uri: http://localhost:8085
+              predicates:
+                - Path=/api/v1/users/**
+              filters:
+                - name: RateLimit
+                  args:
+                    limit: 10
+                    windowSeconds: 60
+
+            # ======================================================
+            # WALLET SERVICE :8081
+            # ======================================================
+
+            - id: wallet-service
+              uri: http://localhost:8081
+              predicates:
+                - Path=/wallets/**
+              filters:
+                - name: RateLimit
+                  args:
+                    limit: 10
+                    windowSeconds: 60
+
+            # ======================================================
+            # PAYMENT SERVICE :8082
+            # ======================================================
+
+            - id: payment-service
+              uri: http://localhost:8082
+              predicates:
+                - Path=/payments/**
+              filters:
+                - name: RateLimit
+                  args:
+                    limit: 10
+                    windowSeconds: 60
+
+            # ======================================================
+            # NOTIFICATION SERVICE :8083
+            # ======================================================
+
+            - id: notification-service
+              uri: http://localhost:8083
+              predicates:
+                - Path=/notifications/**
+              filters:
+                - name: RateLimit
+                  args:
+                    limit: 10
+                    windowSeconds: 60
+
+            # ======================================================
+            # LEDGER SERVICE :8084
+            # ======================================================
+
+            - id: ledger-service
+              uri: http://localhost:8084
+              predicates:
+                - Path=/admin/**
+              filters:
+                - name: RateLimit
+                  args:
+                    limit: 10
+                    windowSeconds: 60
+
+
+# ================================================================
+# JWT CONFIGURATION
+# ================================================================
+
+jwt:
+  secret: PayVerseJwtSecretKeyForDevelopmentOnlyReplaceInProduction123456789
+
+
+# ================================================================
+# API GATEWAY SERVER
+# ================================================================
+
 server:
   port: 8080
-
-# Route sketch for PayVerse services.
-# Actual Gateway route implementation will be added later.
-
-# /users/**           -> User Service         (localhost:8085)
-# /wallets/**         -> Wallet Service       (localhost:8081)
-# /payments/**        -> Payment Service      (localhost:8082)
-# /notifications/**   -> Notification Service (localhost:8083)
-# /ledger/**          -> Ledger Service       (localhost:8084)
-# /admin/**           -> Ledger Service       (localhost:8084)

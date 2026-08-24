@@ -22,9 +22,13 @@ public class JwtTestController {
 
     @GetMapping("/generate")
     public Map<String, String> generateToken(
-            @RequestParam String username) {
+            @RequestParam Long userId,
+            @RequestParam String email) {
 
-        String token = jwtTokenProvider.generateToken(username);
+        String token = jwtTokenProvider.generateToken(
+                userId,
+                email
+        );
 
         return Map.of(
                 "token", token
@@ -51,6 +55,7 @@ public class JwtTestController {
         Map<String, Object> response = new LinkedHashMap<>();
 
         response.put("subject", claims.getSubject());
+        response.put("userId", claims.get("userId"));
         response.put("issuedAt", claims.getIssuedAt());
         response.put("expiration", claims.getExpiration());
 

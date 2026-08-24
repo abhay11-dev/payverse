@@ -93,7 +93,10 @@ if (!matches) {
         throw new InvalidCredentialsException("Invalid email or password");
     }
 String accessToken =
-        jwtTokenProvider.generateToken(user.getEmail());
+       jwtTokenProvider.generateToken(
+        user.getId(),
+        user.getEmail()
+);
 
 
 String refreshToken =
@@ -145,10 +148,11 @@ public BaseResponse<AuthResponse> refreshToken(
                             ));
 
 
-    String newAccessToken =
-            jwtTokenProvider.generateToken(
-                    user.getEmail()
-            );
+  String newAccessToken =
+        jwtTokenProvider.generateToken(
+                user.getId(),
+                user.getEmail()
+        );
 
 
     AuthResponse response =
