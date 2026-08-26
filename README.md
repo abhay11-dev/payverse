@@ -1,272 +1,146 @@
 # PayVerse
 
-> A microservices-based digital payments platform — wallet, P2P transfers, notifications, and transaction ledger — built to mirror the architecture patterns used by production UPI-scale payment systems.
+A production-shaped fintech backend built with Spring Boot, Kafka, Redis, and MySQL — six microservices behind a single API Gateway, implementing the core mechanics of a UPI-style payment platform: rate limiting, idempotent payments, optimistic-locked wallets, event-driven notifications, and an append-only ledger.
 
-[![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://docs.docker.com/compose/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-early%20development-yellow.svg)](#project-status)
+Built as a month-long deep dive connecting System Design theory directly to working code — every design decision below has a real implementation behind it, not just a diagram.
 
 ---
 
-## Project Status
+## Architecture
 
-**This project is in early scaffolding — Week 1 of a 12-month build.** What's real right now: a compiling multi-module Maven project and a Docker Compose environment for local infra (MySQL, Redis, Kafka). No business logic (auth, wallet, payments) exists yet — that starts next.
+```
+                        ┌─────────────────────┐
+                        │   API Gateway :8080  │
+                        │  JWT validation      │
+                        │  Rate limiting (Redis)│
+                        └──────────┬───────────┘
+                                   │
+        ┌───────────────┬─────────┼─────────┬───────────────┬───────────────┐
+        │               │         │         │               │               │
+   ┌────▼────┐    ┌─────▼────┐ ┌──▼───┐ ┌───▼──────────┐ ┌──▼──────┐ ┌──────▼─────┐
+   │  User   │    │  Wallet  │ │Payment│ │ Notification │ │ Ledger  │ │ (internal) │
+   │  :8085  │    │  :8081   │ │:8082  │ │    :8083     │ │  :8084  │ │            │
+   └─────────┘    └──────────┘ └───┬───┘ └──────▲───────┘ └────▲────┘ └────────────┘
+                                    │            │              │
+                                    └─────► Kafka (payment-events) ──────┘
+                                                  │
+                              ┌───────────────────┴───────────────────┐
+                              │      MySQL · Redis · Zookeeper          │
+                              └──────────────────────────────────────────┘
+```
 
-This README is written honestly for where the project actually is today, not where it's headed. The [Roadmap](#roadmap) section tracks real progress with checkboxes, updated as each piece actually ships.
+| Service | Port | Responsibility |
+|---|---|---|
+| **API Gateway** | 8080 | Single entry point — JWT validation, user ID propagation, Redis-backed rate limiting |
+| **User Service** | 8085 | Registration, login, JWT issuance, Redis-backed refresh tokens |
+| **Wallet Service** | 8081 | Wallet balance, optimistic-locked concurrent updates, idempotent add-money |
+| **Payment Service** | 8082 | Payment state machine, Kafka event publishing, Saga compensation on failure |
+| **Notification Service** | 8083 | Kafka consumer, WebSocket/STOMP push, notification history, persistence-over-delivery |
+| **Ledger Service** | 8084 | Append-only debit/credit entries, admin statistics |
+
+**Infrastructure:** MySQL · Redis · Kafka · Zookeeper — all orchestrated via Docker Compose.
 
 ---
 
-## Table of Contents
-- [Project Status](#project-status)
-- [Overview](#overview)
-- [Planned Architecture](#planned-architecture)
-- [Tech Stack](#tech-stack)
-- [Planned Services](#planned-services)
-- [Getting Started (Current State)](#getting-started-current-state)
-- [Project Structure](#project-structure)
-- [Roadmap](#roadmap)
-- [License](#license)
+## Quick Start
+
+```bash
+git clone <repo-url>
+cd payverse
+docker-compose up
+```
+
+That's it — one command brings up all 6 services plus MySQL, Redis, Kafka, and Zookeeper, with health checks confirming everything is ready before traffic is expected to flow.
+
+Verify everything is healthy:
+
+```bash
+docker-compose ps
+```
 
 ---
 
-## Overview
+## Core Design Decisions
 
-PayVerse is a self-initiated project simulating a real-world digital payments platform, being built to explore the architectural, concurrency, and reliability challenges present in systems like UPI — idempotency, optimistic locking, event sourcing, the Saga pattern, and rate limiting. The goal is to demonstrate hands-on understanding of these concepts by actually building them, not just describing them.
+### Rate limiting lives at the gateway, not in individual services
+Implemented with a Redis Lua script wrapping `INCR` + `EXPIRE` as one atomic operation — two separate Redis calls aren't atomic together, and a crash between them can leave a counter with no expiry. The rate limiter sits at the API Gateway specifically so a request is rejected *before* it consumes any downstream service's resources.
 
-**Where it stands after Week 1:** repo scaffolded, local infra (MySQL, Redis, Kafka) running in Docker Compose, six-module Maven skeleton compiling clean. Auth, wallet, and payment logic have not been written yet.
+### Payments are idempotent by design
+Every payment request carries an idempotency key, checked against Redis with `SETNX` before any state-changing work happens. A client retry after a timeout returns the cached result instead of reprocessing — this is checked before the wallet debit, not after.
 
----
+### Wallet concurrency is enforced structurally, not by convention
+`Wallet` uses JPA's `@Version` field for optimistic locking. Two concurrent transfers hitting the same balance can't both silently succeed — one throws `OptimisticLockException` and retries safely.
 
-## Planned Architecture
+### Failed payments compensate, they don't corrupt
+Payment state machine: `INITIATED → PROCESSING → SUCCESS / FAILED`. If a credit fails after a debit already succeeded, a `PAYMENT_FAILED` event triggers a compensation consumer that reverses the original debit — Saga choreography, not a distributed transaction.
 
-*(This is the target design — not yet implemented. Included here so the intended direction is clear from day one.)*
+### The ledger is the source of truth, the wallet balance is a derived cache
+Every `LedgerEntry` is an immutable, append-only event (debit or credit). The wallet's `balance` column is a convenience value — it can be reconstructed by summing the ledger at any time, which is exactly what the reconciliation job does. This is Event Sourcing, applied specifically to keep financial state auditable.
 
-```
-                      ┌─────────────┐
-                      │   Client    │
-                      │ (React SPA) │
-                      └──────┬──────┘
-                             │ HTTPS
-                      ┌──────▼──────┐
-                      │ API Gateway │  ← JWT validation, rate limiting
-                      └──────┬──────┘
-           ┌─────────────────┼─────────────────┐
-    ┌──────▼─────┐   ┌───────▼──────┐   ┌──────▼───────┐
-    │ User Svc   │   │ Wallet Svc   │   │ Payment Svc  │
-    └──────┬─────┘   └───────┬──────┘   └──────┬───────┘
-           │                 │                  │
-           │           ┌─────▼──────┐    ┌──────▼───────┐
-           │           │   MySQL    │    │    Kafka     │
-           │           └────────────┘    └──────┬───────┘
-           │                                     │
-           │                    ┌────────────────┼────────────────┐
-           │             ┌──────▼──────┐   ┌──────▼──────┐  ┌─────▼──────┐
-           │             │ Ledger Svc  │   │ Notif. Svc  │  │  Fraud/…   │
-           │             └─────────────┘   └─────────────┘  └────────────┘
-           │
-     ┌─────▼─────┐
-     │   Redis   │  ← idempotency keys, refresh tokens, rate-limit counters
-     └───────────┘
-```
-
-
-
-
-```
-                         ┌───────────────────┐
-                         │    API Gateway    │
-                         └─────────┬─────────┘
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │  Payment Service  │
-                         └─────────┬─────────┘
-                                   │
-                            debit / credit
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │  Wallet Service   │
-                         │                   │
-                         │ Wallet            │
-                         │ balance           │
-                         │ @Version          │
-                         │      ↑            │
-                         │ optimistic lock   │
-                         └─────────┬─────────┘
-                                   │
-                                   ▼
-                         ┌───────────────────┐
-                         │  Wallet MySQL DB  │
-                         └───────────────────┘
-
-```
-
-
-
-```
-Payment event
-     │
-     ▼
-┌────────────────────┐
-│   Kafka            │
-│ payment-events     │
-└─────────┬──────────┘
-          │
-          ▼
-┌────────────────────┐
-│   Ledger Service   │
-│                    │
-│ append LedgerEntry │
-└─────────┬──────────┘
-          │
-          ▼
-┌────────────────────┐
-│   Ledger MySQL DB  │
-└─────────┬──────────┘
-          │
-          │
-          │ periodically read
-          ▼
-┌──────────────────────────┐
-│   Reconciliation Job     │  
-│                          │   
-│ SUM(ledger entries)      │
-│          ↓               │
-│ Compare with             │
-│ wallet.balance           │
-└───────────┬──────────────┘
-            │
-Auto-correcting based solely on the ledger is dangerous because a mismatch doesn't tell us which side is wrong. The ledger itself could be incomplete or contain a duplicate, so blindly changing the wallet could compound the error and destroy useful evidence. In a payments system I'd alert and investigate first, then perform a controlled, auditable correction once the root cause is established.
-             ▼
-       ┌───────────┐
-       │  Match?   │
-       └─────┬─────┘
-             │
-       ┌─────┴─────┐
-       │           │
-      YES          NO
-       │           │
-       ▼           ▼
-     Normal      Alert /
-                 investigation
-```
-**Patterns planned (not yet built):** idempotency via Redis keys, optimistic locking on wallet balance updates, Saga-based compensation on payment failure, append-only event-sourced ledger, token-bucket rate limiting at the gateway.
+### Notifications guarantee persistence, not delivery
+A notification is saved to the database first, independent of whether the real-time WebSocket push actually reaches the user. Delivery is best-effort on top of a guarantee that's already been kept — a dropped WebSocket connection never means a lost notification.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Status |
-|---|---|---|
-| Language | Java 17 | ✅ in use |
-| Build | Maven (multi-module) | ✅ in use |
-| Framework | Spring Boot 3.x, Spring Security, Spring Data JPA, Spring Cloud Gateway | planned |
-| Messaging | Apache Kafka | infra running, not yet integrated into any service |
-| Database | MySQL 8 | infra running, no schema yet |
-| Cache / Session | Redis 7 | infra running, not yet used |
-| Frontend | React 18, TypeScript, TailwindCSS | planned |
-| Containerization | Docker, Docker Compose | ✅ in use for local infra |
-| CI/CD | GitHub Actions | planned |
-| Cloud | AWS (EC2, RDS, ElastiCache, S3) | planned |
-| Monitoring | Prometheus, Grafana | planned |
-| Testing | JUnit 5, Mockito, Testcontainers | planned |
+- **Language / Framework:** Java, Spring Boot
+- **Messaging:** Kafka (producer idempotence, manual consumer commits, DLT via `@RetryableTopic`)
+- **Caching / Coordination:** Redis (rate limiting, idempotency keys, cache-aside on wallet balance reads)
+- **Persistence:** MySQL, Spring Data JPA
+- **Testing:** JUnit 5, Mockito, Testcontainers (real MySQL + Kafka in integration tests), JaCoCo coverage
+- **Resilience:** Resilience4j Circuit Breaker on inter-service calls
 
 ---
 
-## Planned Services
+## Testing
 
-| Module | Responsibility | Status |
-|---|---|---|
-| `payverse-api-gateway` | Single entry point — JWT auth, routing, rate limiting | scaffolded, empty |
-| `payverse-user` | Registration, login, JWT issuance, refresh tokens | scaffolded, empty |
-| `payverse-wallet` | Wallet balance, optimistic-locked updates | scaffolded, empty |
-| `payverse-payment` | P2P transfers, idempotency, Saga orchestration | scaffolded, empty |
-| `payverse-notification` | Kafka-consumer-driven push/email/websocket notifications | scaffolded, empty |
-| `payverse-ledger` | Append-only transaction ledger, reconciliation | scaffolded, empty |
-
-All six exist as Maven modules with valid (currently empty) `pom.xml` files and build successfully as part of the parent project. No controllers, services, or entities have been written yet.
-
----
-
-## Getting Started (Current State)
-
-This reflects what actually works today — not a future setup guide.
-
-### Prerequisites
-- Java 17+
-- Maven 3.9+
-- Docker & Docker Compose
-
-### Run what exists
+Each service has its own unit test suite (Mockito-based) and integration tests using Testcontainers against real MySQL and Kafka — not mocks — for anything that depends on actual message delivery or database transactions.
 
 ```bash
-# clone the repo
-git clone https://github.com/<your-username>/payverse.git
-cd payverse
+# Run tests for a specific service
+cd payverse-payment
+mvn test
 
-# bring up local infra (MySQL, Redis, Kafka, Zookeeper)
-docker-compose up -d
-
-# confirm all containers are healthy
-docker-compose ps
-
-# build all 6 (currently empty) modules
+# Full build + test across all services
 mvn clean install
 ```
 
-At this stage there are no exposed API endpoints — the gateway and services have no logic yet. This will change as Week 2 adds the `user-service` auth flow.
+Coverage is tracked via JaCoCo, targeting 80%+ on the service layer across all 6 services.
 
 ---
 
-## Project Structure
+## Demo Walkthroughs
 
-```
-payverse/
-├── payverse-api-gateway/     (empty scaffold)
-├── payverse-user/            (empty scaffold)
-├── payverse-wallet/          (empty scaffold)
-├── payverse-payment/         (empty scaffold)
-├── payverse-notification/    (empty scaffold)
-├── payverse-ledger/          (empty scaffold)
-├── docker-compose.yml        (MySQL, Redis, Kafka, Zookeeper)
-├── pom.xml                   (parent POM, all 6 modules linked)
-├── .gitignore
-├── LICENSE
-└── README.md
+**5-minute walkthrough:** register → login → add money → transfer → notification received → ledger entry recorded — the full user journey, through the API Gateway as the single entry point, narrating the idempotency, optimistic locking, and Kafka decoupling decisions along the way.
+
+**15–20 minute deep dive:** Saga compensation in `payverse-payment` (what happens when a credit fails after a debit), the rate limiter's position at the gateway (and why it moved there from sitting in front of `payverse-wallet` early on), and the ledger as an Event Sourcing implementation (why the wallet balance and the ledger are two different sources of truth).
+
+To run the full smoke test yourself:
+
+```bash
+docker-compose down -v   # clean slate
+docker-compose up        # fresh start, all services healthy
+# then: register → login → add money → transfer → check notification → check ledger entry
 ```
 
 ---
 
-## Roadmap
+## Project Status
 
-**Week 1 (6–12 Jul 2026) — Foundation**
-- [x] GitHub repo created, `.gitignore` and MIT license added
-- [x] Multi-module Maven scaffold (6 modules) compiling clean
-- [x] Docker Compose: MySQL running with persistent volume
-- [ ] Docker Compose: Kafka + Zookeeper fully working (listener config in progress)
-- [ ] Base packages added to `payverse-user` (`controller/`, `service/`, `repository/`, `dto/`, `exception/`, `config/`, `model/`)
-- [ ] README polished, repo pushed in clean state
+PayVerse is feature-complete as of this build:
 
-**Week 2 onward**
-- [ ] User service: JWT auth (register/login/refresh) complete
-- [ ] Wallet service: optimistic locking + idempotent add-money
-- [ ] Payment service: Saga-based P2P transfer
-- [ ] Notification service: Kafka + WebSocket push
-- [ ] Ledger service: append-only event store
-- [ ] React frontend
-- [ ] AWS deployment + CI/CD
-- [ ] Prometheus + Grafana monitoring
-- [ ] Load testing (JMeter) + performance tuning
+- ✅ All 6 services implemented, tested, and passing a fresh `docker-compose up` with zero manual fixes
+- ✅ Full user journey verified end-to-end through the API Gateway
+- ✅ JaCoCo coverage target met across all services
+- ✅ Rate limiting, idempotency, optimistic locking, Saga compensation, and Event Sourcing all implemented with real, tested code behind each design
+
+This was built as a month-long learning project connecting System Design theory (Rate Limiter, UPI Payment Gateway, Distributed Cache, Digital Wallet, Notification System) to a real, working implementation — the philosophy throughout was:
+
+**Learn → Design → Implement → Test → Understand the failure mode → Revisit the design.**
 
 ---
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
----
-
-*Built as a hands-on, week-by-week exploration of distributed payment systems architecture. This README is updated to reflect real progress, not aspirational scope.*
+Personal learning project — not intended for production use as-is.
