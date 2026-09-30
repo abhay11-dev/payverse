@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17211b">
+  <title>PayVerse | API Workbench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17211b;
+      --ink-soft: #38463d;
+      --paper: #f2f4ef;
+      --white: #fff;
+      --line: #d6ddd4;
+      --muted: #78827a;
+      --green: #b8f36b;
+      --green-dark: #294d31;
+      --coral: #ed7359;
+      --mint: #a6d8c1;
+      --mono: "DM Mono", "SFMono-Regular", Consolas, monospace;
+      --sans: "Space Grotesk", "Avenir Next", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+    .topbar { min-height: 68px; padding: 0 5vw; display: flex; align-items: center; justify-content: space-between; gap: 24px; background: var(--ink); color: var(--white); }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; letter-spacing: 0; }
+    .brand-mark { width: 28px; height: 28px; display: grid; place-items: center; background: var(--green); color: var(--ink); font-size: 16px; transform: rotate(-8deg); }
+    .brand small { display: block; margin-top: 1px; color: #aeb8ae; font-family: var(--mono); font-size: 9px; font-weight: 400; letter-spacing: 0; }
+    .top-actions { display: flex; align-items: center; gap: 18px; }
+    .status { display: inline-flex; align-items: center; gap: 8px; color: #cbd4ca; font: 11px var(--mono); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #89948a; }
+    .status[data-state="up"] .status-dot { background: var(--green); box-shadow: 0 0 0 4px #b8f36b22; }
+    .status[data-state="down"] .status-dot { background: var(--coral); }
+    .health-button { border: 0; background: transparent; color: var(--green); font-size: 12px; font-weight: 600; padding: 8px 0; }
+
+    .page { width: min(1440px, 100%); margin: 0 auto; padding: 35px 5vw 54px; }
+    .masthead { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding-bottom: 26px; border-bottom: 1px solid var(--line); }
+    .eyebrow { margin: 0 0 8px; color: var(--green-dark); font: 11px var(--mono); text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(30px, 4vw, 50px); line-height: 1; letter-spacing: 0; }
+    .masthead p { max-width: 440px; margin: 12px 0 0; color: var(--ink-soft); font-size: 14px; line-height: 1.55; }
+    .session-chip { border: 1px solid var(--line); padding: 9px 12px; color: var(--ink-soft); background: #fff8; font: 11px var(--mono); white-space: nowrap; }
+    .session-chip[data-active="true"] { color: var(--green-dark); border-color: #96c276; background: #e8f5dc; }
+
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(330px, .75fr); gap: 36px; padding-top: 28px; align-items: start; }
+    .main-column { min-width: 0; }
+    .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 25px; overflow-x: auto; }
+    .tab { position: relative; padding: 12px 15px; border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .tab[aria-selected="true"] { color: var(--ink); }
+    .tab[aria-selected="true"]::after { position: absolute; right: 12px; bottom: -1px; left: 12px; height: 3px; background: var(--coral); content: ""; }
+    .panel[hidden] { display: none; }
+    .panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    h2 { margin: 0; font-size: 21px; letter-spacing: 0; }
+    .panel-heading p { margin: 0; color: var(--muted); font-size: 12px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 18px; }
+    .field { min-width: 0; }
+    .field.wide { grid-column: 1 / -1; }
+    label { display: block; margin-bottom: 7px; color: var(--ink-soft); font-size: 11px; font-weight: 600; }
+    input, select, textarea { width: 100%; min-height: 42px; padding: 10px 11px; border: 1px solid #cbd3ca; border-radius: 2px; outline: none; background: var(--white); color: var(--ink); font-size: 13px; }
+    textarea { min-height: 125px; resize: vertical; font: 12px/1.55 var(--mono); }
+    input:focus, select:focus, textarea:focus { border-color: var(--green-dark); box-shadow: 0 0 0 3px #a6d8c155; }
+    input::placeholder, textarea::placeholder { color: #a1aaa1; }
+    .field-note { margin: 6px 0 0; color: var(--muted); font: 10px var(--mono); }
+    .button-row { display: flex; align-items: center; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    .button { min-height: 40px; padding: 0 15px; border: 1px solid var(--ink); border-radius: 2px; background: var(--ink); color: var(--white); font-size: 12px; font-weight: 600; transition: transform .15s, background .15s; }
+    .button:hover { transform: translateY(-1px); background: #2c3c31; }
+    .button.primary { border-color: var(--green); background: var(--green); color: var(--ink); }
+    .button.primary:hover { background: #c8fa82; }
+    .button.subtle { border-color: var(--line); background: transparent; color: var(--ink); }
+    .button.subtle:hover { background: #e6ebe4; }
+    .button.danger { border-color: #e6b5a9; color: #a93f2a; background: transparent; }
+    .button:disabled { opacity: .5; cursor: wait; transform: none; }
+    .rule { height: 1px; margin: 24px 0; border: 0; background: var(--line); }
+    .inline-data { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+    .inline-data code, code { font-family: var(--mono); }
+    .inline-data code { color: var(--green-dark); }
+
+    .howto { display: grid; grid-template-columns: 30px 1fr; gap: 10px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+    .howto:last-child { border-bottom: 0; }
+    .step-no { color: var(--coral); font: 12px var(--mono); }
+    .howto strong { display: block; font-size: 12px; }
+    .howto p { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+    .warning { margin-top: 19px; padding: 12px 13px; border-left: 3px solid var(--coral); background: #fce8e2; color: #653328; font-size: 11px; line-height: 1.5; }
+    .response-column { position: sticky; top: 18px; min-width: 0; }
+    .response-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--ink); color: white; }
+    .response-head strong { font-size: 12px; }
+    .response-meta { color: #b8c2b8; font: 10px var(--mono); }
+    .response-box { min-height: 220px; max-height: 410px; overflow: auto; padding: 15px; background: #202a23; color: #d7e4d6; font: 11px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+    .response-box[data-kind="error"] { color: #ffc0b2; }
+    .response-box .placeholder { color: #8f9a90; }
+    .response-foot { display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; background: #e3e8e1; color: var(--muted); font: 10px var(--mono); }
+    .endpoint-list { margin-top: 22px; }
+    .endpoint-list h3 { margin: 0 0 10px; font-size: 12px; }
+    .endpoint { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 10px; min-height: 39px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+    .method { font: 9px var(--mono); font-weight: 500; }
+    .method.get { color: #2e7348; }
+    .method.post { color: #a74630; }
+    .method.patch { color: #846324; }
+    .endpoint code { overflow-wrap: anywhere; font-size: 10px; }
+    .endpoint button { border: 0; padding: 4px 0 4px 6px; background: transparent; color: var(--green-dark); font-size: 10px; font-weight: 600; }
+    footer { display: flex; justify-content: space-between; gap: 16px; padding-top: 25px; margin-top: 35px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }
+    footer a { text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 1fr; gap: 30px; }
+      .response-column { position: static; }
+      .response-box { max-height: 300px; }
+    }
+    @media (max-width: 600px) {
+      .topbar { min-height: 60px; padding: 0 18px; }
+      .top-actions { gap: 10px; }
+      .status { font-size: 9px; }
+      .health-button { font-size: 10px; }
+      .page { padding: 27px 18px 38px; }
+      .masthead { display: block; }
+      .session-chip { display: inline-block; margin-top: 16px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field.wide { grid-column: auto; }
+      .panel-heading { display: block; }
+      .panel-heading p { margin-top: 5px; }
+      .tab { padding: 12px 11px; }
+      footer { display: block; line-height: 1.7; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">P</span><span>PAYVERSE<small>FINTECH API WORKBENCH</small></span></div>
+    <div class="top-actions">
+      <span id="gatewayStatus" class="status" data-state="unknown"><span class="status-dot"></span><span>Gateway unknown</span></span>
+      <button id="checkHealth" class="health-button" type="button">Check status</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="masthead" aria-labelledby="pageTitle">
+      <div>
+        <p class="eyebrow">Local environment / API v1</p>
+        <h1 id="pageTitle">API Workbench</h1>
+        <p>Exercise the PayVerse service flows through the API Gateway. Authenticate once, then create wallets, move test funds, and inspect the event-backed records.</p>
+      </div>
+      <div id="sessionChip" class="session-chip" data-active="false">NO ACTIVE SESSION</div>
+    </section>
+
+    <div class="workspace">
+      <div class="main-column">
+        <nav class="tabs" role="tablist" aria-label="Workbench sections">
+          <button class="tab" id="tab-account" type="button" role="tab" aria-controls="accountPanel" aria-selected="true">Account</button>
+          <button class="tab" id="tab-wallet" type="button" role="tab" aria-controls="walletPanel" aria-selected="false">Wallet</button>
+          <button class="tab" id="tab-payment" type="button" role="tab" aria-controls="paymentPanel" aria-selected="false">Transfer</button>
+          <button class="tab" id="tab-records" type="button" role="tab" aria-controls="recordsPanel" aria-selected="false">Records</button>
+          <button class="tab" id="tab-request" type="button" role="tab" aria-controls="requestPanel" aria-selected="false">Request</button>
+        </nav>
+
+        <section class="panel" id="accountPanel" role="tabpanel" aria-labelledby="tab-account">
+          <div class="panel-heading"><h2>Account access</h2><p>Register or obtain a short-lived demo session.</p></div>
+          <form id="authForm">
+            <div class="form-grid">
+              <div class="field">
+                <label for="authMode">Action</label>
+                <select id="authMode" name="mode"><option value="login">Sign in</option><option value="register">Create account</option></select>
+              </div>
+              <div class="field">
+                <label for="authEmail">Email</label>
+                <input id="authEmail" name="email" type="email" autocomplete="email" placeholder="you@example.test" required>
+              </div>
+              <div class="field" id="phoneField" hidden>
+                <label for="authPhone">Indian mobile number</label>
+                <input id="authPhone" name="phone" type="tel" inputmode="numeric" pattern="[6-9][0-9]{9}" placeholder="9876543210">
+              </div>
+              <div class="field">
+                <label for="authPassword">Password</label>
+                <input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="8" placeholder="At least 8 characters" required>
+              </div>
+            </div>
+            <div class="button-row">
+              <button class="button primary" type="submit">Continue</button>
+              <button class="button danger" id="logoutButton" type="button" hidden>End session</button>
+            </div>
+          </form>
+          <hr class="rule">
+          <div class="inline-data"><span>Authenticated user ID</span><code id="currentUserId">Not signed in</code></div>
+          <div class="warning">This is a local learning/demo platform. Use test identities and never enter real credentials or money. The gateway validates JWTs, but the backend is not production-hardened.</div>
+          <div class="endpoint-list">
+            <h3>Quick test sequence</h3>
+            <div class="howto"><span class="step-no">01</span><div><strong>Create two test accounts</strong><p>Register both accounts; copy the user IDs from the response panel or token session.</p></div></div>
+            <div class="howto"><span class="step-no">02</span><div><strong>Fund each wallet</strong><p>Sign in as each user, create a wallet, then add a small test amount.</p></div></div>
+            <div class="howto"><span class="step-no">03</span><div><strong>Transfer and inspect</strong><p>Sign in as the sender, transfer to the second user ID, then check notifications and ledger statistics.</p></div></div>
+          </div>
+        </section>
+
+        <section class="panel" id="walletPanel" role="tabpanel" aria-labelledby="tab-wallet" hidden>
+          <div class="panel-heading"><h2>Wallet operations</h2><p>Wallet endpoints use the authenticated account ID.</p></div>
+          <div class="inline-data"><span>Current account</span><code id="walletUserId">Sign in to continue</code></div>
+          <div class="button-row"><button class="button primary" id="createWallet" type="button">Create wallet</button><button class="button subtle" id="getBalance" type="button">Read balance</button></div>
+          <hr class="rule">
+          <form id="addMoneyForm">
+            <div class="form-grid">
+              <div class="field"><label for="fundAmount">Amount</label><input id="fundAmount" type="number" min="0.01" step="0.01" value="250.00" required></div>
+              <div class="field"><label for="idempotencyKey">Idempotency key</label><input id="idempotencyKey" type="text" required></div>
+            </div>
+            <p class="field-note">A new key is generated for each attempt. Reusing a key intentionally tests duplicate-request handling.</p>
+            <div class="button-row"><button class="button" type="submit">Add test funds</button><button class="button subtle" id="newKey" type="button">New key</button></div>
+          </form>
+        </section>
+
+        <section class="panel" id="paymentPanel" role="tabpanel" aria-labelledby="tab-payment" hidden>
+          <div class="panel-heading"><h2>Move money</h2><p>Payment service debits then credits using the two user IDs.</p></div>
+          <form id="transferForm">
+            <div class="form-grid">
+              <div class="field"><label for="senderId">Sender user ID</label><input id="senderId" type="number" min="1" required></div>
+              <div class="field"><label for="receiverId">Receiver user ID</label><input id="receiverId" type="number" min="1" placeholder="Second test account" required></div>
+              <div class="field"><label for="transferAmount">Amount</label><input id="transferAmount" type="number" min="0.01" step="0.01" value="25.00" required></div>
+            </div>
+            <div class="button-row"><button class="button primary" type="submit">Submit transfer</button></div>
+          </form>
+          <p class="field-note">Both users must already have wallets. A successful response means the synchronous wallet calls completed; Kafka consumers update notifications and ledger records asynchronously.</p>
+        </section>
+
+        <section class="panel" id="recordsPanel" role="tabpanel" aria-labelledby="tab-records" hidden>
+          <div class="panel-heading"><h2>Event records</h2><p>Inspect consumer output after a transfer.</p></div>
+          <div class="button-row" style="margin-top:0">
+            <button class="button" id="getNotifications" type="button">Load notifications</button>
+            <button class="button subtle" id="getUnread" type="button">Unread count</button>
+            <button class="button subtle" id="getLedger" type="button">Ledger stats</button>
+          </div>
+          <div class="endpoint-list">
+            <h3>What these reads return</h3>
+            <div class="endpoint"><span class="method get">GET</span><code>/notifications?userId={id}&amp;page=0&amp;size=10</code><span>paged history</span></div>
+            <div class="endpoint"><span class="method get">GET</span><code>/notifications/unread-count?userId={id}</code><span>unread total</span></div>
+            <div class="endpoint"><span class="method get">GET</span><code>/admin/stats</code><span>ledger summary</span></div>
+          </div>
+        </section>
+
+        <section class="panel" id="requestPanel" role="tabpanel" aria-labelledby="tab-request" hidden>
+          <div class="panel-heading"><h2>Raw API request</h2><p>Call any endpoint routed through the gateway.</p></div>
+          <form id="rawRequestForm">
+            <div class="form-grid">
+              <div class="field"><label for="requestMethod">Method</label><select id="requestMethod"><option>GET</option><option>POST</option><option>PATCH</option><option>PUT</option><option>DELETE</option></select></div>
+              <div class="field"><label for="requestPath">Path and query</label><input id="requestPath" type="text" value="/admin/stats" spellcheck="false" required></div>
+              <div class="field wide"><label for="requestBody">JSON body (optional)</label><textarea id="requestBody" spellcheck="false" placeholder='{"userId": 1}'></textarea></div>
+            </div>
+            <div class="button-row"><button class="button primary" type="submit">Send request</button></div>
+          </form>
+          <div class="endpoint-list">
+            <h3>Gateway route map</h3>
+            <div class="endpoint"><span class="method post">POST</span><code>/api/v1/auth/register</code><button type="button" data-method="POST" data-path="/api/v1/auth/register" data-body='{"email":"test@example.test","phone":"9876543210","password":"DemoPass123"}'>Use</button></div>
+            <div class="endpoint"><span class="method post">POST</span><code>/api/v1/auth/login</code><button type="button" data-method="POST" data-path="/api/v1/auth/login" data-body='{"email":"test@example.test","password":"DemoPass123"}'>Use</button></div>
+            <div class="endpoint"><span class="method post">POST</span><code>/wallets</code><button type="button" data-method="POST" data-path="/wallets" data-body='{"userId":1}'>Use</button></div>
+            <div class="endpoint"><span class="method get">GET</span><code>/wallets/{userId}/balance</code><button type="button" data-method="GET" data-path="/wallets/1/balance">Use</button></div>
+            <div class="endpoint"><span class="method post">POST</span><code>/payments/transfer</code><button type="button" data-method="POST" data-path="/payments/transfer" data-body='{"senderUserId":1,"receiverUserId":2,"amount":"25.00"}'>Use</button></div>
+            <div class="endpoint"><span class="method patch">PATCH</span><code>/notifications/{id}/read?userId={userId}</code><button type="button" data-method="PATCH" data-path="/notifications/1/read?userId=1">Use</button></div>
+            <div class="endpoint"><span class="method get">GET</span><code>/admin/stats</code><button type="button" data-method="GET" data-path="/admin/stats">Use</button></div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="response-column" aria-label="Latest API response">
+        <div class="response-head"><strong>Latest response</strong><span id="responseMeta" class="response-meta">READY</span></div>
+        <pre id="responseBody" class="response-box"><span class="placeholder">Responses from the gateway will appear here. Sign in before calling protected endpoints.</span></pre>
+        <div class="response-foot"><span id="responsePath">No request sent</span><span id="responseTime">-- ms</span></div>
+        <div class="endpoint-list">
+          <h3>Service map</h3>
+          <div class="endpoint"><span class="method get">8080</span><code>API Gateway</code><span>JWT / routes</span></div>
+          <div class="endpoint"><span class="method get">8085</span><code>User service</code><span>auth / users</span></div>
+          <div class="endpoint"><span class="method get">8081</span><code>Wallet service</code><span>balances</span></div>
+          <div class="endpoint"><span class="method get">8082</span><code>Payment service</code><span>transfers</span></div>
+          <div class="endpoint"><span class="method get">8083</span><code>Notification</code><span>history / WS</span></div>
+          <div class="endpoint"><span class="method get">8084</span><code>Ledger service</code><span>event entries</span></div>
+        </div>
+      </aside>
+    </div>
+    <footer><span>PayVerse local developer console · amounts are test values</span><span>Project guide: README.md</span></footer>
+  </main>
+
+  <script>
+    const tokenStoreKey = "payverse.accessToken";
+    const idStoreKey = "payverse.userId";
+    const tokenSlot = sessionStorage;
+    const byId = (id) => document.getElementById(id);
+    const panels = ["account", "wallet", "payment", "records", "request"];
+    let accessToken = tokenSlot.getItem(tokenStoreKey) || "";
+    let currentUserId = tokenSlot.getItem(idStoreKey) || "";
+
+    function parseResponse(payload) {
+      if (payload && typeof payload === "object" && Object.hasOwn(payload, "data")) return payload.data;
+      return payload;
+    }
+
+    function redactSecrets(value) {
+      if (Array.isArray(value)) return value.map(redactSecrets);
+      if (!value || typeof value !== "object") return value;
+      return Object.fromEntries(Object.entries(value).map(([key, item]) => {
+        if (/accessToken|refreshToken|password/i.test(key)) return [key, "[stored in this browser session]"];
+        return [key, redactSecrets(item)];
+      }));
+    }
+
+    function showResponse({ status, method, path, duration, payload, error = false }) {
+      byId("responseMeta").textContent = status ? `${status} ${status >= 200 && status < 300 ? "OK" : "RESPONSE"}` : "NETWORK ERROR";
+      byId("responseBody").dataset.kind = error ? "error" : "normal";
+      byId("responseBody").textContent = typeof payload === "string" ? payload : JSON.stringify(redactSecrets(payload), null, 2);
+      byId("responsePath").textContent = method ? `${method} ${path}` : "Gateway status";
+      byId("responseTime").textContent = `${duration} ms`;
+    }
+
+    async function request(method, path, body) {
+      const startedAt = performance.now();
+      const headers = { Accept: "application/json" };
+      if (body !== undefined) headers["Content-Type"] = "application/json";
+      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+      try {
+        const response = await fetch(path, {
+          method,
+          headers,
+          body: body === undefined ? undefined : JSON.stringify(body)
+        });
+        const raw = await response.text();
+        let payload = raw;
+        if (raw) {
+          try { payload = JSON.parse(raw); } catch { payload = raw; }
+        } else {
+          payload = { message: response.statusText || "No response body" };
+        }
+        showResponse({ status: response.status, method, path, duration: Math.round(performance.now() - startedAt), payload, error: !response.ok });
+        return { response, payload: parseResponse(payload) };
+      } catch (error) {
+        showResponse({ method, path, duration: Math.round(performance.now() - startedAt), payload: error.message || "Request failed", error: true });
+        return { response: null, payload: null };
+      }
+    }
+
+    function updateSession() {
+      const active = Boolean(accessToken && currentUserId);
+      byId("currentUserId").textContent = currentUserId || "Not signed in";
+      byId("walletUserId").textContent = currentUserId || "Sign in to continue";
+      byId("senderId").value = currentUserId || "";
+      byId("sessionChip").textContent = active ? `SESSION ACTIVE · USER ${currentUserId}` : "NO ACTIVE SESSION";
+      byId("sessionChip").dataset.active = String(active);
+      byId("logoutButton").hidden = !active;
+    }
+
+    function userIdFromToken(token) {
+      try {
+        const segment = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+        const claims = JSON.parse(atob(segment));
+        return claims.userId == null ? "" : String(claims.userId);
+      } catch {
+        return "";
+      }
+    }
+
+    function setTab(name) {
+      for (const panelName of panels) {
+        byId(`${panelName}Panel`).hidden = panelName !== name;
+        byId(`tab-${panelName}`).setAttribute("aria-selected", String(panelName === name));
+      }
+    }
+
+    function newIdempotencyKey() {
+      const suffix = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      byId("idempotencyKey").value = `payverse-demo-${suffix}`;
+    }
+
+    async function checkHealth() {
+      const result = await request("GET", "/actuator/health");
+      const healthy = Boolean(result.response && result.response.ok);
+      byId("gatewayStatus").dataset.state = healthy ? "up" : "down";
+      byId("gatewayStatus").lastElementChild.textContent = healthy ? "Gateway online" : "Gateway unavailable";
+    }
+
+    document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => setTab(tab.id.replace("tab-", ""))));
+    byId("authMode").addEventListener("change", (event) => {
+      const registering = event.target.value === "register";
+      byId("phoneField").hidden = !registering;
+      byId("authPhone").required = registering;
+      byId("authPassword").autocomplete = registering ? "new-password" : "current-password";
+    });
+
+    byId("authForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const registering = byId("authMode").value === "register";
+      const body = { email: byId("authEmail").value.trim(), password: byId("authPassword").value };
+      if (registering) body.phone = byId("authPhone").value.trim();
+      const { response, payload } = await request("POST", `/api/v1/auth/${registering ? "register" : "login"}`, body);
+      if (!response?.ok) return;
+      if (registering) {
+        const id = payload?.id ?? payload?.user?.id;
+        if (id != null) showResponse({ status: response.status, method: "POST", path: "/api/v1/auth/register", duration: 0, payload: { message: "Account created", userId: id } });
+        byId("authMode").value = "login";
+        byId("phoneField").hidden = true;
+        byId("authPhone").required = false;
+        return;
+      }
+      const token = payload?.accessToken;
+      if (!token) {
+        showResponse({ status: response.status, method: "POST", path: "/api/v1/auth/login", duration: 0, payload: { message: "Login succeeded, but no accessToken was found in the response." }, error: true });
+        return;
+      }
+      accessToken = token;
+      currentUserId = userIdFromToken(token) || String(payload?.userId || "");
+      tokenSlot.setItem(tokenStoreKey, accessToken);
+      if (currentUserId) tokenSlot.setItem(idStoreKey, currentUserId);
+      updateSession();
+    });
+
+    byId("logoutButton").addEventListener("click", () => {
+      accessToken = "";
+      currentUserId = "";
+      tokenSlot.removeItem(tokenStoreKey);
+      tokenSlot.removeItem(idStoreKey);
+      updateSession();
+    });
+
+    byId("createWallet").addEventListener("click", async () => {
+      if (!currentUserId) return setTab("account");
+      await request("POST", "/wallets", { userId: Number(currentUserId) });
+    });
+
+    byId("getBalance").addEventListener("click", async () => {
+      if (!currentUserId) return setTab("account");
+      await request("GET", `/wallets/${encodeURIComponent(currentUserId)}/balance`);
+    });
+
+    byId("addMoneyForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!currentUserId) return setTab("account");
+      const body = {
+        userId: Number(currentUserId),
+        amount: byId("fundAmount").value,
+        idempotencyKey: byId("idempotencyKey").value.trim()
+      };
+      const { response } = await request("POST", "/wallets/add-money", body);
+      if (response?.ok) newIdempotencyKey();
+    });
+
+    byId("newKey").addEventListener("click", newIdempotencyKey);
+    byId("transferForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const body = {
+        senderUserId: Number(byId("senderId").value),
+        receiverUserId: Number(byId("receiverId").value),
+        amount: byId("transferAmount").value
+      };
+      await request("POST", "/payments/transfer", body);
+    });
+
+    byId("getNotifications").addEventListener("click", async () => {
+      if (!currentUserId) return setTab("account");
+      await request("GET", `/notifications?userId=${encodeURIComponent(currentUserId)}&page=0&size=10`);
+    });
+
+    byId("getUnread").addEventListener("click", async () => {
+      if (!currentUserId) return setTab("account");
+      await request("GET", `/notifications/unread-count?userId=${encodeURIComponent(currentUserId)}`);
+    });
+
+    byId("getLedger").addEventListener("click", async () => request("GET", "/admin/stats"));
+    byId("checkHealth").addEventListener("click", checkHealth);
+
+    byId("rawRequestForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const method = byId("requestMethod").value;
+      const path = byId("requestPath").value.trim();
+      if (!path.startsWith("/") || path.startsWith("//")) {
+        showResponse({ method, path, duration: 0, payload: "Use a same-origin path beginning with one slash.", error: true });
+        return;
+      }
+      const rawBody = byId("requestBody").value.trim();
+      let body;
+      if (rawBody) {
+        try { body = JSON.parse(rawBody); }
+        catch { showResponse({ method, path, duration: 0, payload: "Request body is not valid JSON.", error: true }); return; }
+      }
+      await request(method, path, body);
+    });
+
+    document.querySelectorAll("[data-method][data-path]").forEach((button) => button.addEventListener("click", () => {
+      byId("requestMethod").value = button.dataset.method;
+      byId("requestPath").value = button.dataset.path;
+      byId("requestBody").value = button.dataset.body || "";
+      setTab("request");
+      byId("requestPath").focus();
+    }));
+
+    updateSession();
+    newIdempotencyKey();
+    checkHealth();
+  </script>
+</body>
+</html>

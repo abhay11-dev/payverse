@@ -1,6 +1,7 @@
 package com.payverse.paymentservice;
 
 import com.payverse.paymentservice.client.WalletClient;
+import com.payverse.paymentservice.dto.WalletResponse;
 import com.payverse.paymentservice.event.PaymentEventPublisher;
 import com.payverse.paymentservice.service.impl.PaymentServiceImpl;
 
@@ -49,6 +50,11 @@ class PaymentServiceIT {
 
         BigDecimal amount = new BigDecimal("100.00");
 
+        when(walletClient.debit(eq(senderUserId), eq(amount), any(String.class)))
+                .thenReturn(walletResponse(senderUserId, 101L));
+        when(walletClient.addMoney(eq(receiverUserId), eq(amount), any(String.class)))
+                .thenReturn(walletResponse(receiverUserId, 202L));
+
         // Act
         paymentService.transfer(
                 senderUserId,
@@ -88,6 +94,9 @@ class PaymentServiceIT {
         Long receiverUserId = 2L;
 
         BigDecimal amount = new BigDecimal("100.00");
+
+        when(walletClient.debit(eq(senderUserId), eq(amount), any(String.class)))
+                .thenReturn(walletResponse(senderUserId, 101L));
 
         // Simulate receiver wallet failure
         when(walletClient.addMoney(
@@ -130,4 +139,12 @@ class PaymentServiceIT {
         verify(paymentEventPublisher, times(0))
                 .publishPaymentSuccess(any());
     }
+
+        private WalletResponse walletResponse(Long userId, Long walletId) {
+                WalletResponse response = new WalletResponse();
+                response.setUserId(userId);
+                response.setWalletId(walletId);
+                response.setBalance(new BigDecimal("900.00"));
+                return response;
+        }
 }

@@ -39,15 +39,7 @@ public class PaymentEventConsumer {
 
         Notification notification = new Notification();
 
-        /*
-         * IMPORTANT:
-         * PaymentEvent currently contains wallet IDs,
-         * not user IDs.
-         *
-         * Temporarily using senderWalletId as userId
-         * for our end-to-end test.
-         */
-        notification.setUserId(event.getSenderWalletId());
+        notification.setUserId(event.getSenderUserId());
 
         notification.setMessage(
                 "Payment "

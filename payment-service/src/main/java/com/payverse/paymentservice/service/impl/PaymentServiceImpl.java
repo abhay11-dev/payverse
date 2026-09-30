@@ -108,7 +108,7 @@ public class PaymentServiceImpl implements PaymentService {
                             transactionId,
                             senderUserId,
                             receiverUserId,
-                            null,
+                            senderWallet.getWalletId(),
                             null,
                             amount,
                             null,

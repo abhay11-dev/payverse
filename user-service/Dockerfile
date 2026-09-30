@@ -1,9 +1,9 @@
-FROM maven:3.10.1-eclipse-temurin-21 AS builder
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /workspace
 COPY pom.xml ./
 COPY user-service/pom.xml ./user-service/pom.xml
 COPY user-service/src ./user-service/src
-RUN mvn -pl user-service -am -DskipTests package
+RUN mvn -f user-service/pom.xml -Dmaven.test.skip=true compile jar:jar spring-boot:repackage
 
 FROM eclipse-temurin:21-jre
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*

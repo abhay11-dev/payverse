@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public class PaymentEvent {
 
     private String transactionId;
+    private Long senderUserId;
     private Long senderWalletId;
     private Long receiverWalletId;
     private BigDecimal amount;
@@ -19,6 +20,14 @@ public class PaymentEvent {
 
     public void setTransactionId(String transactionId) {
         this.transactionId = transactionId;
+    }
+
+    public Long getSenderUserId() {
+        return senderUserId;
+    }
+
+    public void setSenderUserId(Long senderUserId) {
+        this.senderUserId = senderUserId;
     }
 
     public Long getSenderWalletId() {

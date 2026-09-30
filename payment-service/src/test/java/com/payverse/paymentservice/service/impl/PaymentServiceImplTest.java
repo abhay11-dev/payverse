@@ -1,6 +1,7 @@
 package com.payverse.paymentservice.service.impl;
 
 import com.payverse.paymentservice.client.WalletClient;
+import com.payverse.paymentservice.dto.WalletResponse;
 import com.payverse.paymentservice.event.PaymentEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,11 @@ class PaymentServiceImplTest {
         Long senderUserId = 1L;
         Long receiverUserId = 2L;
         BigDecimal amount = new BigDecimal("100.00");
+
+        when(walletClient.debit(eq(senderUserId), eq(amount), any(String.class)))
+                .thenReturn(walletResponse(senderUserId, 101L));
+        when(walletClient.addMoney(eq(receiverUserId), eq(amount), any(String.class)))
+                .thenReturn(walletResponse(receiverUserId, 202L));
 
         paymentService.transfer(
                 senderUserId,
@@ -130,6 +136,9 @@ class PaymentServiceImplTest {
         Long receiverUserId = 2L;
         BigDecimal amount = new BigDecimal("100.00");
 
+        when(walletClient.debit(eq(senderUserId), eq(amount), any(String.class)))
+                .thenReturn(walletResponse(senderUserId, 101L));
+
         doThrow(new RuntimeException("Receiver wallet unavailable"))
                 .when(walletClient)
                 .addMoney(
@@ -165,4 +174,12 @@ class PaymentServiceImplTest {
         verify(paymentEventPublisher, never())
                 .publishPaymentSuccess(any());
     }
+
+        private WalletResponse walletResponse(Long userId, Long walletId) {
+                WalletResponse response = new WalletResponse();
+                response.setUserId(userId);
+                response.setWalletId(walletId);
+                response.setBalance(new BigDecimal("900.00"));
+                return response;
+        }
 }

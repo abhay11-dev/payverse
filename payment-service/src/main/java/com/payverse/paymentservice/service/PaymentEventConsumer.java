@@ -57,7 +57,7 @@ public class PaymentEventConsumer {
 
             // Reverse the original sender debit.
             walletClient.credit(
-                    event.getSenderWalletId(),
+                    event.getSenderUserId(),
                     event.getAmount(),
                     event.getTransactionId() + "-compensation"
             );

@@ -6,7 +6,6 @@ import com.payverse.userservice.model.User;
 import com.payverse.userservice.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
-import com.payverse.userservice.model.UserRole;
 import com.payverse.userservice.dto.AuthResponse;
 import com.payverse.userservice.dto.LoginRequest;
 
@@ -72,26 +71,13 @@ public BaseResponse<AuthResponse> login(
             .orElseThrow(() ->
                     new InvalidCredentialsException("Invalid email or password"));
 
-System.out.println("Email from request: " + request.getEmail());
-System.out.println("Raw password: " + request.getPassword());
-System.out.println("Stored hash: " + user.getPassword());
-
 boolean matches = passwordEncoder.matches(
         request.getPassword(),
         user.getPassword());
 
-System.out.println("Password matches: " + matches);
-
 if (!matches) {
     throw new InvalidCredentialsException("Invalid email or password");
 }
-
-    if (!passwordEncoder.matches(
-            request.getPassword(),
-            user.getPassword())) {
-
-        throw new InvalidCredentialsException("Invalid email or password");
-    }
 String accessToken =
        jwtTokenProvider.generateToken(
         user.getId(),
